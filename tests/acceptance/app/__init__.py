@@ -40,16 +40,6 @@ def sample_child_span(request):
     return zipkin.create_headers_for_new_span()
 
 
-def uniq_request_id_tween(handler, registry):
-    def tween(request):
-            if 'zipkin.uri_generator' in registry.settings:
-                request.unique_request_id = registry.settings[
-                    'zipkin.uri_generator']
-            return handler(request)
-
-    return tween
-
-
 @view_config(route_name='server_error', renderer='json')
 def server_error(request):
     response = Response('Server Error!')
@@ -79,8 +69,6 @@ def main(global_config, **settings):
     config.add_route('client_error', '/client_error')
 
     config.scan()
-
-    config.add_tween('tests.acceptance.app.uniq_request_id_tween')
 
     config.add_tween('pyramid_zipkin.zipkin.zipkin_tween', over=MAIN)
 
