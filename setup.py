@@ -17,7 +17,6 @@ setup(
     description='Zipkin distributed tracing system support library for pyramid.',
     packages=find_packages(exclude=('tests*', 'testing*', 'tools*')),
     install_requires = [
-        'scribe>=2.0',
         'pyramid',
         'Thrift',
     ],

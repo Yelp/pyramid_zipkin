@@ -3,10 +3,6 @@
 import logging
 import time
 
-from scribe import scribe
-from thrift.transport import TTransport, TSocket
-from thrift.protocol import TBinaryProtocol
-
 from pyramid_zipkin.exception import ZipkinError
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
@@ -176,30 +172,10 @@ def log_span(zipkin_attrs, span_name, registry_settings, annotations,
     if 'zipkin.scribe_handler' in registry_settings:
         return registry_settings['zipkin.scribe_handler'](scribe_stream, message)
     else:
-        scribe_host = registry_settings['zipkin.scribe_host']
-        scribe_port = registry_settings['zipkin.scribe_port']
-        default_scribe_handler(scribe_host, scribe_port, scribe_stream, message)
-
-
-def default_scribe_handler(host, port, stream_name, message):
-    """Default scribe handler to send log message to scribe host
-
-    :param host: scribe host to connect and send logs to.
-    :param port: scribe port to connect to.
-    :param stream_name: scribe stream name, default: zipkin.
-    :param message: base64 encoded log span information
-
-    :returns: return status code after sending to scribe. 0 means success.
-    """
-    socket = TSocket.TSocket(host, port)
-    transport = TTransport.TFramedTransport(socket)
-    protocol = TBinaryProtocol.TBinaryProtocol(
-        trans=transport, strictRead=False, strictWrite=False)
-    client = scribe.Client(protocol)
-    transport.open()
-
-    log_entry = scribe.LogEntry(stream_name, message)
-    return client.Log(messages=[log_entry])
+        raise ZipkinError(
+            "`zipkin.scribe_handler` is a required config property, which is"
+            " missing. It is a callback method which takes stream_name and a"
+            " message as the params.")
 
 
 def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,
