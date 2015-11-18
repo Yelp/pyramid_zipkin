@@ -3,6 +3,10 @@
 import logging
 import time
 
+from scribe import scribe
+from thrift.transport import TTransport, TSocket
+from thrift.protocol import TBinaryProtocol
+
 from pyramid_zipkin.exception import ZipkinError
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
@@ -24,16 +28,15 @@ class ZipkinLoggingContext(object):
     :type endpoint_attrs: :class:`pyramid_zipkin.zipkinCore.ttypes.Endpoint`
     :param log_handler: log handler to be attached to the module logger.
     :type log_handler: :class:`pyramid_zipkin.logging_helper.ZipkinLoggerHandler`
-    :param request_path_qs: request path query stored in the span as `http.uri`
-    :param request_method: Name of the service span created eg. GET, POST
+    :param request: active pyramid request object
     """
-    def __init__(self, zipkin_attrs, endpoint_attrs, log_handler,
-                 request_path_qs, request_method):
+    def __init__(self, zipkin_attrs, endpoint_attrs, log_handler, request):
         self.zipkin_attrs = zipkin_attrs
         self.endpoint_attrs = endpoint_attrs
         self.handler = log_handler
-        self.request_path_qs = request_path_qs
-        self.request_method = request_method
+        self.request_path_qs = request.path_qs
+        self.request_method = request.method
+        self.registry_settings = request.registry.settings
         self.response_status_code = 0
 
     def __enter__(self):
@@ -74,13 +77,15 @@ class ZipkinLoggingContext(object):
                     span['annotations'], self.endpoint_attrs)
                 binary_annotations = binary_annotation_list_builder(
                     span['binary_annotations'], self.endpoint_attrs)
-                log_span(self.zipkin_attrs, span['span_name'], annotations,
+                log_span(self.zipkin_attrs, span['span_name'],
+                         self.registry_settings, annotations,
                          binary_annotations, span['is_client'])
 
             end_timestamp = time.time()
             log_service_span(self.zipkin_attrs, self.start_timestamp,
                              end_timestamp, self.request_path_qs,
-                             self.endpoint_attrs, self.request_method)
+                             self.endpoint_attrs, self.request_method,
+                             self.registry_settings)
 
 
 class ZipkinLoggerHandler(logging.StreamHandler, object):
@@ -155,22 +160,55 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
         self.store_span(span_name, is_client, annotations, binary_annotations)
 
 
-def log_span(zipkin_attrs, span_name, annotations, binary_annotations,
-             is_client):
+def log_span(zipkin_attrs, span_name, registry_settings, annotations,
+             binary_annotations, is_client):
     """Creates a span and logs it.
+
+    If `zipkin.scribe_handler` config is set, it is used to act as a callback
+    and log message is sent as a parameter.
     """
     span = create_span(
         zipkin_attrs, span_name, annotations, binary_annotations, is_client)
-    base64_thrift(span)
-    # TODO: *************** ADD scribe LOG. ***************
+    message = base64_thrift(span)
+
+    scribe_stream = registry_settings.get('zipkin.scribe_stream_name', 'zipkin')
+
+    if 'zipkin.scribe_handler' in registry_settings:
+        return registry_settings['zipkin.scribe_handler'](scribe_stream, message)
+    else:
+        scribe_host = registry_settings['zipkin.scribe_host']
+        scribe_port = registry_settings['zipkin.scribe_port']
+        default_scribe_handler(scribe_host, scribe_port, scribe_stream, message)
+
+
+def default_scribe_handler(host, port, stream_name, message):
+    """Default scribe handler to send log message to scribe host
+
+    :param host: scribe host to connect and send logs to.
+    :param port: scribe port to connect to.
+    :param stream_name: scribe stream name, default: zipkin.
+    :param message: base64 encoded log span information
+
+    :returns: return status code after sending to scribe. 0 means success.
+    """
+    socket = TSocket.TSocket(host, port)
+    transport = TTransport.TFramedTransport(socket)
+    protocol = TBinaryProtocol.TBinaryProtocol(
+        trans=transport, strictRead=False, strictWrite=False)
+    client = scribe.Client(protocol)
+    transport.open()
+
+    log_entry = scribe.LogEntry(stream_name, message)
+    return client.Log(messages=[log_entry])
 
 
 def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,
-                     path, endpoint, method):
+                     path, endpoint, method, registry_settings):
     """Logs a span with `ss` and `sr` annotations.
     """
     annotations = annotation_list_builder(
         {'sr': start_timestamp, 'ss': end_timestamp}, endpoint)
     binary_annotations = binary_annotation_list_builder(
         {'http.uri': path}, endpoint)
-    log_span(zipkin_attrs, method, annotations, binary_annotations, False)
+    log_span(zipkin_attrs, method, registry_settings,
+             annotations, binary_annotations, False)
