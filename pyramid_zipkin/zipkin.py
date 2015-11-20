@@ -29,7 +29,7 @@ def zipkin_tween(handler, registry):
         endpoint_attrs = create_endpoint(request)
         log_handler = ZipkinLoggerHandler(zipkin_attrs)
         with ZipkinLoggingContext(zipkin_attrs, endpoint_attrs, log_handler,
-                                  request.path_qs, request.method) as context:
+                                  request) as context:
             response = handler(request)
             context.response_status_code = response.status_code
             return response

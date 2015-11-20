@@ -1,7 +1,44 @@
 Configuring Zipkin
 ===================
 
-All of the settings have a default functionality as well. These can be used to
+These settings are mandatory and need to be provided for `pyramid_zipkin` to
+work correctly:
+
+1) zipkin.scribe_handler
+------------------------
+    A callback function which takes two parameters, the stream name and the
+    message data. A sample of the method can be, something like this:
+
+    .. code-block:: python
+
+        from scribe import scribe
+        from thrift.transport import TTransport, TSocket
+        from thrift.protocol import TBinaryProtocol
+
+        def scribe_handler(stream_name, message):
+            socket = TSocket.TSocket(host="HOST", port=9999)
+            transport = TTransport.TFramedTransport(socket)
+            protocol = TBinaryProtocol.TBinaryProtocol(
+                trans=transport, strictRead=False, strictWrite=False)
+            client = scribe.Client(protocol)
+            transport.open()
+
+            log_entry = scribe.LogEntry(stream_name, message)
+            result = client.Log(messages=[log_entry])
+            if result == 0:
+              print 'success'
+
+    Once the method is defined, it can be assigned like so:
+
+    .. code-block::
+
+        'zipkin.scribe_handler': scribe_handler
+
+    The above example uses python package `facebook-scribe <https://pypi.python.org/pypi/facebook-scribe/>`_
+    for the scribe apis but any similar package can do the work.
+
+
+All below settings are optional and have a sane default functionality set. These can be used to
 fine tune as per your use case.
 
 1) zipkin.blacklisted_paths
@@ -16,12 +53,14 @@ fine tune as per your use case.
 
 
 3) zipkin.trace_id_generator
--------------------------------------
+----------------------------
     A method definition to generate a `trace_id` for the request.
 
     The method MUST take `request` as a parameter.
 
-
+4) zipkin.scribe_stream_name
+----------------------------
+    The scribe `stream_name` the message will be logged to. It defaults to `zipkin`.
 
 These settings can be added like so:
 
