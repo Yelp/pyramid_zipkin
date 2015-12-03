@@ -4,7 +4,13 @@ import threading
 
 _thread_local = threading.local()
 
-_thread_local.requests = []
+
+def get_thread_local_requests():
+    """A wrapper to return _thread_local.requests
+    """
+    if not hasattr(_thread_local, 'requests'):
+        _thread_local.requests = []
+    return _thread_local.requests
 
 
 def get_zipkin_attrs():
@@ -13,8 +19,9 @@ def get_zipkin_attrs():
     :returns: tuple containing zipkin attrs
     :rtype: :class:`zipkin.ZipkinAttrs`
     """
-    if _thread_local.requests:
-        return _thread_local.requests[-1]
+    requests = get_thread_local_requests()
+    if requests:
+        return requests[-1]
 
 
 def pop_zipkin_attrs():
@@ -23,8 +30,9 @@ def pop_zipkin_attrs():
     :returns: tuple containing zipkin attrs
     :rtype: :class:`zipkin.ZipkinAttrs`
     """
-    if _thread_local.requests:
-        return _thread_local.requests.pop()
+    requests = get_thread_local_requests()
+    if requests:
+        return requests.pop()
 
 
 def push_zipkin_attrs(zipkin_attr):
@@ -33,4 +41,4 @@ def push_zipkin_attrs(zipkin_attr):
     :param zipkin_attr: tuple containing zipkin related attrs
     :type zipkin_attr: :class:`zipkin.ZipkinAttrs`
     """
-    _thread_local.requests.append(zipkin_attr)
+    get_thread_local_requests().append(zipkin_attr)

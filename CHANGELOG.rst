@@ -1,3 +1,8 @@
+0.1.2 (2015-12-03)
+------------------
+- Re-assign empty list to threading_local.requests if attr not present instead of
+  globally assigning empty list.
+
 0.1.0 (2015-11-08)
 ------------------
 - pyramid-zipkin setup.
