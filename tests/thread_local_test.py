@@ -3,6 +3,18 @@ import mock
 from pyramid_zipkin import thread_local
 
 
+@mock.patch('pyramid_zipkin.thread_local._thread_local.requests', ['foo'])
+def test_get_thread_local_requests_returns_back_request_if_present():
+    assert thread_local.get_thread_local_requests() == ['foo']
+
+
+def test_get_thread_local_requests_creates_empty_list_if_not_attached():
+    delattr(thread_local._thread_local, "requests")
+    assert not hasattr(thread_local._thread_local, "requests")
+    assert thread_local.get_thread_local_requests() == []
+    assert hasattr(thread_local._thread_local, "requests")
+
+
 @mock.patch('pyramid_zipkin.thread_local._thread_local.requests', [])
 def test_get_zipkin_attrs_returns_none_if_no_requests():
     assert not thread_local.get_zipkin_attrs()
