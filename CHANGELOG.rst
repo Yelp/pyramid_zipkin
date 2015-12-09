@@ -1,3 +1,7 @@
+0.2.2 (2015-12-09)
+------------------
+- Compatible with py33, py34. Replaced Thrift with thriftpy.
+
 0.1.2 (2015-12-03)
 ------------------
 - Re-assign empty list to threading_local.requests if attr not present instead of

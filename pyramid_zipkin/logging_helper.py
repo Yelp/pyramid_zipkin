@@ -68,7 +68,7 @@ class ZipkinLoggingContext(object):
         a success. It also logs the service `ss` and `sr` annotations.
         """
         if self.zipkin_attrs.is_sampled and self.is_response_success():
-            for _, span in self.handler.spans.iteritems():
+            for _, span in self.handler.spans.items():
                 annotations = annotation_list_builder(
                     span['annotations'], self.endpoint_attrs)
                 binary_annotations = binary_annotation_list_builder(

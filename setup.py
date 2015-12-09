@@ -4,7 +4,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.1.2"
+__version__ = "0.2.2"
 
 setup(
     name='pyramid_zipkin',
@@ -16,8 +16,9 @@ setup(
     url="https://github.com/Yelp/pyramid_zipkin",
     description='Zipkin distributed tracing system support library for pyramid.',
     packages=find_packages(exclude=('tests*', 'testing*', 'tools*')),
+    package_data = { '': [ '*.thrift' ] },
     install_requires = [
         'pyramid',
-        'Thrift',
+        'thriftpy',
     ],
 )

@@ -4,7 +4,7 @@ from pyramid_zipkin import thrift_helper
 
 
 @mock.patch('pyramid_zipkin.thrift_helper.generate_span_id', autospec=True)
-@mock.patch('pyramid_zipkin.thrift_helper.ttypes.Span', autospec=True)
+@mock.patch('pyramid_zipkin.thrift_helper.zipkin_core.Span', autospec=True)
 def test_create_span_creates_a_child_span_object_for_child(
         Span, gen_span, sampled_zipkin_attr):
     gen_span.return_value = '56'
@@ -12,19 +12,21 @@ def test_create_span_creates_a_child_span_object_for_child(
     assert Span.return_value == thrift_helper.create_span(
         sampled_zipkin_attr, 'foo', 'ann', 'binary_ann', is_client=True)
     Span.assert_called_once_with(
-        {'name': 'foo', 'trace_id': 18, 'binary_annotations': 'binary_ann',
-         'annotations': 'ann', 'parent_id': get_id('23'), 'id': get_id('56')})
+        **{'name': 'foo', 'trace_id': 18, 'binary_annotations': 'binary_ann',
+           'annotations': 'ann', 'parent_id': get_id('23'),
+           'id': get_id('56')})
 
 
-@mock.patch('pyramid_zipkin.thrift_helper.ttypes.Span', autospec=True)
+@mock.patch('pyramid_zipkin.thrift_helper.zipkin_core.Span', autospec=True)
 def test_create_span_creates_a_default_span_object(
         Span, sampled_zipkin_attr):
     get_id = thrift_helper.get_id
     assert Span.return_value == thrift_helper.create_span(
         sampled_zipkin_attr, 'foo', 'ann', 'binary_ann')
     Span.assert_called_once_with(
-        {'name': 'foo', 'trace_id': 18, 'binary_annotations': 'binary_ann',
-         'annotations': 'ann', 'parent_id': get_id('34'), 'id': get_id('23')})
+        **{'name': 'foo', 'trace_id': 18, 'binary_annotations': 'binary_ann',
+           'annotations': 'ann', 'parent_id': get_id('34'),
+           'id': get_id('23')})
 
 
 def test_create_endpoint_creates_correct_endpoint(request):
