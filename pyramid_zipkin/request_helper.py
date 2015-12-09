@@ -27,7 +27,7 @@ class ZipkinAttrs(namedtuple(
 
 def generate_random_64bit_string():
     """Returns a 64 bit ascii encoded string"""
-    return codecs.encode(os.urandom(8), 'hex_codec').decode('ascii')
+    return codecs.encode(os.urandom(8), 'hex_codec')
 
 
 def thrift_compatble_string(token_id):

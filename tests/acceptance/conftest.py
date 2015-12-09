@@ -26,7 +26,7 @@ def host():
 
 @pytest.fixture
 def annotation(host):
-    return {'host': host, 'duration': None}
+    return {'host': host}
 
 
 @pytest.fixture
@@ -46,7 +46,10 @@ def get_span(annotation, uri_binary_annotation):
     return {'debug': False,
             'id': 1,
             'parent_id': 0,
-            'annotations': sorted([sr_annotation, ss_annotation]),
+            'duration': None,
+            'timestamp': None,
+            'annotations': sorted([sr_annotation, ss_annotation],
+                                  key=lambda ann: ann['value']),
             'binary_annotations': [uri_binary_annotation, ],
             'name': 'GET',
             }
