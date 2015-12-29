@@ -30,13 +30,13 @@ def test_log_service_span_creates_service_annotations_and_logs_span(
 
 
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_log_span_creates_service_annotations_and_logs_span(
-        b64, create_sp):
-    registry = {'zipkin.scribe_handler': (lambda x, y: None)}
+        thrift_obj, create_sp):
+    registry = {'zipkin.transport_handler': (lambda x, y: None)}
     logging_helper.log_span('attr', 'X', registry, 'ann', 'bann', 'is_client')
     create_sp.assert_called_once_with('attr', 'X', 'ann', 'bann', 'is_client')
-    b64.assert_called_once_with(create_sp.return_value)
+    thrift_obj.assert_called_once_with(create_sp.return_value)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.zipkin_logger', autospec=True)
@@ -98,13 +98,13 @@ def test_zipkin_logging_context_doesnt_log_if_span_not_sampled(
 @mock.patch('pyramid_zipkin.logging_helper.binary_annotation_list_builder',
             autospec=True)
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 @mock.patch('pyramid_zipkin.logging_helper.log_service_span', autospec=True)
 def test_zipkin_logging_context_logs_annotated_span_if_sampled_and_success(
-        log_span, b64, create_sp, binary_ann, ann, context):
+        log_span, thrift_obj, create_sp, binary_ann, ann, context):
     context.start_timestamp = 24
     context.response_status_code = 200
-    context.registry_settings = {'zipkin.scribe_handler': (lambda x, y: None)}
+    context.registry_settings = {'zipkin.transport_handler': (lambda x, y: None)}
     spans = {'foo': {'annotations': 'ann1', 'binary_annotations': 'bann1',
              'span_name': 'foo', 'is_client': False}}
     context.handler = mock.Mock(spans=spans)
@@ -115,7 +115,7 @@ def test_zipkin_logging_context_logs_annotated_span_if_sampled_and_success(
     create_sp.assert_called_once_with(
         context.zipkin_attrs, 'foo', ann.return_value,
         binary_ann.return_value, False)
-    b64.assert_called_once_with(create_sp.return_value)
+    thrift_obj.assert_called_once_with(create_sp.return_value)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.zipkin_logger', autospec=True)
@@ -190,29 +190,30 @@ def test_zipkin_handler_raises_exception_if_ann_and_bann_not_provided(
 
 
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_log_span_calls_scribe_handler_with_correct_params(b64, create_sp):
-    scribe_handler = mock.Mock()
-    registry = {'zipkin.scribe_handler': scribe_handler,
-                'zipkin.scribe_stream_name': 'foo'}
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_log_span_calls_transport_handler_with_correct_params(thrift_obj,
+                                                              create_sp):
+    transport_handler = mock.Mock()
+    registry = {'zipkin.transport_handler': transport_handler,
+                'zipkin.stream_name': 'foo'}
     logging_helper.log_span('attr', 'X', registry, 'ann', 'bann', 'is_client')
-    scribe_handler.assert_called_once_with('foo', b64.return_value)
+    transport_handler.assert_called_once_with('foo', thrift_obj.return_value)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_log_span_uses_default_stream_name_if_not_provided(b64, create_sp):
-    scribe_handler = mock.Mock()
-    registry = {'zipkin.scribe_handler': scribe_handler}
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_log_span_uses_default_stream_name_if_not_provided(thrift_obj, create_sp):
+    transport_handler = mock.Mock()
+    registry = {'zipkin.transport_handler': transport_handler}
     logging_helper.log_span('attr', 'X', registry, 'ann', 'bann', 'is_client')
-    scribe_handler.assert_called_once_with('zipkin', b64.return_value)
+    transport_handler.assert_called_once_with('zipkin', thrift_obj.return_value)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_log_span_raises_error_if_handler_not_defined(b64, create_sp):
-    registry = {'zipkin.scribe_stream_name': 'foo'}
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_log_span_raises_error_if_handler_not_defined(thrift_obj, create_sp):
+    registry = {'zipkin.stream_name': 'foo'}
     with pytest.raises(ZipkinError) as excinfo:
         logging_helper.log_span('attr', 'X', registry, 'ann', 'bann', '_')
-    assert ("`zipkin.scribe_handler` is a required config property" in str(
+    assert ("`zipkin.transport_handler` is a required config property" in str(
         excinfo.value))
