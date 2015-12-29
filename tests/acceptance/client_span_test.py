@@ -6,8 +6,8 @@ from .app import main
 from tests.acceptance import test_helper
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_client_ann_are_logged_as_new_spans(b64_thrift,
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_client_ann_are_logged_as_new_spans(thrift_obj,
                                             sampled_trace_id_generator):
     settings = {
         'zipkin.trace_id_generator': sampled_trace_id_generator,
@@ -25,11 +25,11 @@ def test_client_ann_are_logged_as_new_spans(b64_thrift,
             assert ('foo_client', 2000000) == (foo_ann['value'],
                                                foo_ann['timestamp'])
 
-    b64_thrift.side_effect = validate_span
+    thrift_obj.side_effect = validate_span
 
     TestApp(main({}, **settings)).get('/sample_v2_client', status=200)
 
-    assert b64_thrift.call_count == 2
+    assert thrift_obj.call_count == 2
 
 
 def test_headers_created_for_sampled_child_span(sampled_trace_id_generator):

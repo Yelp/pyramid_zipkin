@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import base64
 import os
 import socket
 import struct
@@ -126,17 +125,17 @@ def create_span(zipkin_attrs, span_name, annotations, binary_annotations,
     })
 
 
-def base64_thrift(thrift_obj):  # pragma: no cover
+def thrift_obj_in_bytes(thrift_obj):  # pragma: no cover
     """
-    Returns base64 encoded Thrift object.
+    Returns TBinaryProtocol encoded Thrift object.
 
     :param thrift_obj: thrift object to encode
-    :returns: base64 encoding of thrift object
+    :returns: thrift object in TBinaryProtocol format bytes.
     """
     trans = TMemoryBuffer()
     thrift_obj.write(TBinaryProtocol(trans))
 
-    return base64.b64encode(trans.getvalue()).strip()
+    return bytes(trans.getvalue())
 
 
 def get_id(id_value):

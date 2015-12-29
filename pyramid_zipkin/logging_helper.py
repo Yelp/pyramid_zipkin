@@ -7,9 +7,9 @@ from pyramid_zipkin.exception import ZipkinError
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import annotation_list_builder
-from pyramid_zipkin.thrift_helper import base64_thrift
 from pyramid_zipkin.thrift_helper import binary_annotation_list_builder
 from pyramid_zipkin.thrift_helper import create_span
+from pyramid_zipkin.thrift_helper import thrift_obj_in_bytes
 
 
 zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
@@ -160,22 +160,23 @@ def log_span(zipkin_attrs, span_name, registry_settings, annotations,
              binary_annotations, is_client):
     """Creates a span and logs it.
 
-    If `zipkin.scribe_handler` config is set, it is used to act as a callback
+    If `zipkin.transport_handler` config is set, it is used to act as a callback
     and log message is sent as a parameter.
     """
     span = create_span(
         zipkin_attrs, span_name, annotations, binary_annotations, is_client)
-    message = base64_thrift(span)
+    message = thrift_obj_in_bytes(span)
 
-    scribe_stream = registry_settings.get('zipkin.scribe_stream_name', 'zipkin')
+    scribe_stream = registry_settings.get('zipkin.stream_name', 'zipkin')
 
-    if 'zipkin.scribe_handler' in registry_settings:
-        return registry_settings['zipkin.scribe_handler'](scribe_stream, message)
+    if 'zipkin.transport_handler' in registry_settings:
+        return registry_settings['zipkin.transport_handler'](scribe_stream,
+                                                             message)
     else:
         raise ZipkinError(
-            "`zipkin.scribe_handler` is a required config property, which is"
-            " missing. It is a callback method which takes stream_name and a"
-            " message as the params.")
+            "`zipkin.transport_handler` is a required config property, which"
+            " is missing. It is a callback method which takes stream_name and"
+            " a message as the params and logs message via scribe/kafka.")
 
 
 def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,

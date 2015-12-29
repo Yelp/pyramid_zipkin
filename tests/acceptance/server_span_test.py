@@ -9,9 +9,9 @@ from tests.acceptance import test_helper
 from pyramid_zipkin.thrift_helper import get_id
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_sample_server_span_with_100_percent_tracing(
-        b64_thrift, default_trace_id_generator, get_span):
+        thrift_obj, default_trace_id_generator, get_span):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
@@ -27,28 +27,28 @@ def test_sample_server_span_with_100_percent_tracing(
         assert old_time <= timestamps['sr']
         assert timestamps['sr'] <= timestamps['ss']
 
-    b64_thrift.side_effect = validate_span
+    thrift_obj.side_effect = validate_span
 
     TestApp(main({}, **settings)).get('/sample', status=200)
 
-    assert b64_thrift.call_count == 1
+    assert thrift_obj.call_count == 1
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_sample_server_span_with_specific_trace_id_which_samples(
-        b64_thrift, sampled_trace_id_generator):
+        thrift_obj, sampled_trace_id_generator):
     settings = {
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
     TestApp(main({}, **settings)).get('/sample', status=200)
 
-    assert b64_thrift.call_count == 1
+    assert thrift_obj.call_count == 1
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_no_sample_server_span_happens_for_500_response(
-        b64_thrift, default_trace_id_generator):
+        thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
@@ -56,12 +56,12 @@ def test_no_sample_server_span_happens_for_500_response(
 
     TestApp(main({}, **settings)).get('/server_error', status=500)
 
-    assert b64_thrift.call_count == 0
+    assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_no_sample_server_span_happens_for_400_response(
-        b64_thrift, default_trace_id_generator):
+        thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
@@ -69,11 +69,11 @@ def test_no_sample_server_span_happens_for_400_response(
 
     TestApp(main({}, **settings)).get('/client_error', status=400)
 
-    assert b64_thrift.call_count == 0
+    assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_unsampled_request_has_no_span(b64_thrift, default_trace_id_generator):
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
@@ -81,11 +81,11 @@ def test_unsampled_request_has_no_span(b64_thrift, default_trace_id_generator):
 
     TestApp(main({}, **settings)).get('/sample', status=200)
 
-    assert b64_thrift.call_count == 0
+    assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_blacklisted_route_has_no_span(b64_thrift, sampled_trace_id_generator):
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_blacklisted_route_has_no_span(thrift_obj, sampled_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': sampled_trace_id_generator,
@@ -94,11 +94,11 @@ def test_blacklisted_route_has_no_span(b64_thrift, sampled_trace_id_generator):
 
     TestApp(main({}, **settings)).get('/sample', status=200)
 
-    assert b64_thrift.call_count == 0
+    assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_blacklisted_path_has_no_span(b64_thrift, sampled_trace_id_generator):
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_blacklisted_path_has_no_span(thrift_obj, sampled_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': sampled_trace_id_generator,
@@ -107,11 +107,11 @@ def test_blacklisted_path_has_no_span(b64_thrift, sampled_trace_id_generator):
 
     TestApp(main({}, **settings)).get('/sample', status=200)
 
-    assert b64_thrift.call_count == 0
+    assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.base64_thrift', autospec=True)
-def test_server_extra_annotations_are_loggd(b64_thrift,
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_server_extra_annotations_are_loggd(thrift_obj,
                                             sampled_trace_id_generator):
     settings = {
         'zipkin.trace_id_generator': sampled_trace_id_generator,
@@ -128,8 +128,8 @@ def test_server_extra_annotations_are_loggd(b64_thrift,
             b_ann = result_span['binary_annotations'][0]
             assert ('ping', 'pong') == (b_ann['key'], b_ann['value'])
 
-    b64_thrift.side_effect = validate_span
+    thrift_obj.side_effect = validate_span
 
     TestApp(main({}, **settings)).get('/sample_v2', status=200)
 
-    assert b64_thrift.call_count == 2
+    assert thrift_obj.call_count == 2
