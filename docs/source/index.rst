@@ -1,17 +1,34 @@
 pyramid_zipkin documentation
-========================
+============================
 
-This project acts as a pyramid tween to faciliate creation of zipkin client and service spans.
+This project acts as a `Pyramid <http://docs.pylonsproject.org/en/latest/docs/pyramid.html>`_
+tween to facilitate creation of `zipkin <https://github.com/openzipkin/zipkin/wiki>`_ service spans.
 
 Features include:
 
-* Blacklist specific route/paths from getting traced.
+* Blacklisting specific route/paths from getting traced.
 
-* `zipkin_tracing_percent` in registry controls the %age of requests gettings sampled.
+* `zipkin_tracing_percent` to control the %age of requests getting sampled.
 
 * API `create_headers_for_new_span` to generate new client headers.
 
-* Use logger `pyramid_zipkin.logger` to log client spans.
+* Creates `http.uri` binary annotation automatically for each trace.
+
+Install
+-------
+
+.. code-block:: python
+
+    pip install pyramid_zipkin
+
+Usage
+-----
+
+In your service's webapp, you need to include:
+
+.. code-block:: python
+
+    config.include('pyramid_zipkin')
 
 Contents:
 
@@ -20,6 +37,7 @@ Contents:
 
    configuring_zipkin
    pyramid_zipkin
+   changelog
 
 Indices and tables
 ==================

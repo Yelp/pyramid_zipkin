@@ -1,13 +1,13 @@
-Configuring Zipkin
-===================
+Configuring pyramid_zipkin
+==========================
 
 These settings are mandatory and need to be provided for `pyramid_zipkin` to
 work correctly:
 
-1) zipkin.transport_handler
+1. zipkin.transport_handler
 ---------------------------
-    A callback function which takes two parameters, the stream name and the
-    message data. A sample of the method can be, something like this:
+    A callback function which takes two parameters, the `stream name` and the
+    `message data`. A sample method can be, something like this:
 
     A) FOR `kafka` TRANSPORT:
 
@@ -23,7 +23,7 @@ work correctly:
 
     Once the method is defined, it can be assigned like so:
 
-    .. code-block::
+    .. code-block:: python
 
         'zipkin.transport_handler': kafka_handler
 
@@ -54,37 +54,49 @@ work correctly:
 
     Once the method is defined, it can be assigned like so:
 
-    .. code-block::
+    .. code-block:: python
 
         'zipkin.transport_handler': scribe_handler
 
     The above example uses python package `facebook-scribe <https://pypi.python.org/pypi/facebook-scribe/>`_
     for the scribe apis but any similar package can do the work.
 
+-------------------------------------------------------------------------
 
 All below settings are optional and have a sane default functionality set. These can be used to
 fine tune as per your use case.
 
-2) zipkin.stream_name
-----------------------------
+1. zipkin.stream_name
+---------------------
     The `stream_name` the message will be logged to via transport layer. It defaults to `zipkin`.
 
-3) zipkin.blacklisted_paths
+2. zipkin.blacklisted_paths
 ---------------------------
     A list of paths as strings (accepts regex) any of which if matched with the
-    request path will not be sampled.
+    request path will not be sampled. Defaults to `[]`. Example:
 
-4) zipkin.blacklisted_routes
+    .. code-block:: python
+
+        'zipkin.blacklisted_paths': [r'^/status/?',]
+
+
+3. zipkin.blacklisted_routes
 ----------------------------
     A list of routes as strings any of which if matched with the request route
-    will not be sampled.
+    will not be sampled. Defaults to `[]`. Example:
+
+    .. code-block:: python
+
+        'zipkin.blacklisted_routes': ['some_internal_route',]
 
 
-5) zipkin.trace_id_generator
+4. zipkin.trace_id_generator
 ----------------------------
-    A method definition to generate a `trace_id` for the request.
+    A method definition to generate a `trace_id` for the request. By default,
+    it creates a randon trace id otherwise.
 
-    The method MUST take `request` as a parameter.
+    The method MUST take `request` as a parameter (so that you can make trace
+    id deterministic).
 
 These settings can be added like so:
 

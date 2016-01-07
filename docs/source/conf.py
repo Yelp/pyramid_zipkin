@@ -6,7 +6,7 @@ extensions = [
     'sphinx.ext.intersphinx',
 ]
 
-release = "1.0.0"
+release = "0.4.0"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
