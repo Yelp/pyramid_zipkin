@@ -21,10 +21,11 @@ def context():
 @mock.patch('pyramid_zipkin.logging_helper.log_span', autospec=True)
 def test_log_service_span_creates_service_annotations_and_logs_span(
         log_sp, binary_ann, ann):
-    logging_helper.log_service_span('attr', 'strt', 'end', 'path', 'endp', 'X',
-                                    'registry')
+    logging_helper.log_service_span('attr', 'strt', 'end', 'path', 'path_qs',
+                                    'endp', 'X', 'registry')
     ann.assert_called_once_with({'sr': 'strt', 'ss': 'end'}, 'endp')
-    binary_ann.assert_called_once_with({'http.uri': 'path'}, 'endp')
+    binary_ann.assert_called_once_with({'http.uri': 'path',
+                                        'http.uri.qs': 'path_qs'}, 'endp')
     log_sp.assert_called_once_with(
         'attr', 'X', 'registry', ann.return_value, binary_ann.return_value, False)
 
@@ -130,8 +131,9 @@ def test_zipkin_logging_context_logs_service_span_if_sampled_and_success(
     context.zipkin_attrs.is_sampled = True
     context.log_spans()
     log_span.assert_called_once_with(
-        context.zipkin_attrs, 24, 42, context.request_path_qs,
-        'endpoint_attrs', context.request_method, context.registry_settings)
+        context.zipkin_attrs, 24, 42, context.request_path,
+        context.request_path_qs, 'endpoint_attrs', context.request_method,
+        context.registry_settings)
 
 
 def test_zipkin_handler_init():

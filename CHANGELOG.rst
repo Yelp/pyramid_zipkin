@@ -1,3 +1,7 @@
+0.4.0 (2016-01-07)
+------------------
+- Add `http.uri.qs` annoation which includes query string, `http.uri` doesn't.
+
 0.3.0 (2015-12-29)
 ------------------
 - Change config parameters to be generic for scribe/kafka transport.
