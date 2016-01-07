@@ -4,7 +4,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 setup(
     name='pyramid_zipkin',

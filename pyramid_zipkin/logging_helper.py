@@ -30,6 +30,7 @@ class ZipkinLoggingContext(object):
         self.zipkin_attrs = zipkin_attrs
         self.endpoint_attrs = endpoint_attrs
         self.handler = log_handler
+        self.request_path = request.path
         self.request_path_qs = request.path_qs
         self.request_method = request.method
         self.registry_settings = request.registry.settings
@@ -79,9 +80,9 @@ class ZipkinLoggingContext(object):
 
             end_timestamp = time.time()
             log_service_span(self.zipkin_attrs, self.start_timestamp,
-                             end_timestamp, self.request_path_qs,
-                             self.endpoint_attrs, self.request_method,
-                             self.registry_settings)
+                             end_timestamp, self.request_path,
+                             self.request_path_qs, self.endpoint_attrs,
+                             self.request_method, self.registry_settings)
 
 
 class ZipkinLoggerHandler(logging.StreamHandler, object):
@@ -180,12 +181,12 @@ def log_span(zipkin_attrs, span_name, registry_settings, annotations,
 
 
 def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,
-                     path, endpoint, method, registry_settings):
+                     path, path_qs, endpoint, method, registry_settings):
     """Logs a span with `ss` and `sr` annotations.
     """
     annotations = annotation_list_builder(
         {'sr': start_timestamp, 'ss': end_timestamp}, endpoint)
     binary_annotations = binary_annotation_list_builder(
-        {'http.uri': path}, endpoint)
+        {'http.uri': path, 'http.uri.qs': path_qs}, endpoint)
     log_span(zipkin_attrs, method, registry_settings,
              annotations, binary_annotations, False)
