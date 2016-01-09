@@ -31,3 +31,8 @@ In your service's webapp, you need to include:
 ```
     config.include('pyramid_zipkin')
 ```
+
+License
+-------
+
+Copyright (c) 2016, Yelp, Inc. All rights reserved. Apache v2
