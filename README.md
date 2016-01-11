@@ -1,9 +1,6 @@
 [![Travis](https://img.shields.io/travis/Yelp/pyramid_zipkin.svg)](https://travis-ci.org/Yelp/pyramid_zipkin?branch=master)
-
 [![Coverage Status](https://img.shields.io/coveralls/Yelp/pyramid_zipkin.svg)](https://coveralls.io/r/Yelp/pyramid_zipkin)
-
 [![PyPi version](https://img.shields.io/pypi/v/pyramid_zipkin.svg)](https://pypi.python.org/pypi/pyramid_zipkin/)
-
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/pyramid_zipkin.svg)](https://pypi.python.org/pypi/pyramid_zipkin/)
 
 pyramid_zipkin
