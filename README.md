@@ -1,10 +1,18 @@
+[![Travis](https://img.shields.io/travis/Yelp/pyramid_zipkin.svg)](https://travis-ci.org/Yelp/pyramid_zipkin?branch=master)
+
+[![Coverage Status](https://img.shields.io/coveralls/Yelp/pyramid_zipkin.svg)](https://coveralls.io/r/Yelp/pyramid_zipkin)
+
+[![PyPi version](https://img.shields.io/pypi/v/pyramid_zipkin.svg)](https://pypi.python.org/pypi/pyramid_zipkin/)
+
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/pyramid_zipkin.svg)](https://pypi.python.org/pypi/pyramid_zipkin/)
+
 pyramid_zipkin
 --------------
 
-Compatible with `py26`, `py27`, `py33`, `py34`.
-
 This project acts as a [Pyramid](http://docs.pylonsproject.org/en/latest/docs/pyramid.html)
 tween to facilitate creation of [zipkin](https://github.com/openzipkin/zipkin/wiki) service spans.
+
+Full documentation [here](http://pyramid-zipkin.readthedocs.org/en/latest/).
 
 Features include:
 
