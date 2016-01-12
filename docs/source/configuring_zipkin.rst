@@ -90,7 +90,17 @@ fine tune as per your use case.
         'zipkin.blacklisted_routes': ['some_internal_route',]
 
 
-4. zipkin.trace_id_generator
+4. zipkin.tracing_percent
+-------------------------
+    A number between 0.0 and 100.0 to control how many request calls get sampled.
+    Defaults to `0.50`. Example:
+
+    .. code-block:: python
+
+        'zipkin.tracing_percent': 100.0  # Trace all the calls.
+
+
+5. zipkin.trace_id_generator
 ----------------------------
     A method definition to generate a `trace_id` for the request. By default,
     it creates a randon trace id otherwise.
