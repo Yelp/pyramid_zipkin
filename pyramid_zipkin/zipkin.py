@@ -33,7 +33,8 @@ def zipkin_tween(handler, registry):
                                   request) as context:
             response = handler(request)
             context.response_status_code = response.status_code
-            context.binary_annotations_dict = get_binary_annotations(request)
+            context.binary_annotations_dict = get_binary_annotations(
+                    request, response)
 
             return response
 

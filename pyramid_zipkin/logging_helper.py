@@ -156,14 +156,18 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
         self.store_span(span_name, is_client, annotations, binary_annotations)
 
 
-def get_binary_annotations(request):
+def get_binary_annotations(request, response):
     """Helper method for getting all binary annotations from the request.
+
+    :param request: the Pyramid request object
+    :param response: the Pyramid response object
+    :returns: binary annotation dict of {str: str}
     """
     annotations = {'http.uri': request.path, 'http.uri.qs': request.path_qs}
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:
         annotations.update(
-            settings['zipkin.set_extra_binary_annotations'](request))
+            settings['zipkin.set_extra_binary_annotations'](request, response))
     return annotations
 
 

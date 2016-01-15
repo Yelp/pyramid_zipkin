@@ -109,15 +109,17 @@ fine tune as per your use case.
     id deterministic).
 
 
-5. zipkin.set_extra_binary_annotations
+6. zipkin.set_extra_binary_annotations
 --------------------------------------
-    A method that takes the `request` object as a parameter and produces
-    extra binary annotations. If this config is omitted, only `http.uri`
-    and `http.uri.qs` are added as binary annotations. Example:
+    A method that takes `request` and `response` objects as parameters
+    and produces extra binary annotations. If this config is omitted,
+    only `http.uri` and `http.uri.qs` are added as binary annotations.
+    The return value of the callback must be a dictionary, and all keys
+    and values must be in `str` format. Example:
 
     .. code-block:: python
 
-        def set_binary_annotations(request):
+        def set_binary_annotations(request, response):
             return {'view': get_view(request)}
 
         settings['zipkin.set_extra_binary_annotations'] = set_binary_annotations
@@ -132,7 +134,7 @@ These settings can be added like so:
             settings['zipkin.blacklisted_paths'] = [r'^/foo/?']
             settings['zipkin.blacklisted_routes'] = ['bar']
             settings['zipkin.trace_id_generator'] = lambda req: '0x42'
-            settings['zipkin.set_extra_binary_annotations'] = lambda req: {'attr': req.attr}j
+            settings['zipkin.set_extra_binary_annotations'] = lambda req, resp: {'attr': str(req.attr)}
             # ...and so on with the other settings...
             config = Configurator(settings=settings)
             config.include('zipkin')

@@ -222,7 +222,7 @@ def test_log_span_raises_error_if_handler_not_defined(thrift_obj, create_sp):
 
 
 def test_get_binary_annotations():
-    def set_extra_binary_annotations(req):
+    def set_extra_binary_annotations(req, resp):
         return {'k': 'v'}
     registry = mock.Mock(
         settings={
@@ -230,13 +230,14 @@ def test_get_binary_annotations():
         })
     request = mock.Mock(path='/path', path_qs='/path?time=now')
     request.registry = registry
+    response = mock.Mock()
 
-    annotations = logging_helper.get_binary_annotations(request)
+    annotations = logging_helper.get_binary_annotations(request, response)
     expected = {'http.uri': '/path', 'http.uri.qs': '/path?time=now', 'k': 'v'}
     assert annotations == expected
 
     # Try it again with no callback specified
     request.registry.settings = {}
     del expected['k']
-    annotations = logging_helper.get_binary_annotations(request)
+    annotations = logging_helper.get_binary_annotations(request, response)
     assert annotations == expected
