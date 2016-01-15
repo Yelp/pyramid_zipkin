@@ -21,11 +21,10 @@ def context():
 @mock.patch('pyramid_zipkin.logging_helper.log_span', autospec=True)
 def test_log_service_span_creates_service_annotations_and_logs_span(
         log_sp, binary_ann, ann):
-    logging_helper.log_service_span('attr', 'strt', 'end', 'path', 'path_qs',
+    logging_helper.log_service_span('attr', 'strt', 'end', {'k': 'v'},
                                     'endp', 'X', 'registry')
     ann.assert_called_once_with({'sr': 'strt', 'ss': 'end'}, 'endp')
-    binary_ann.assert_called_once_with({'http.uri': 'path',
-                                        'http.uri.qs': 'path_qs'}, 'endp')
+    binary_ann.assert_called_once_with({'k': 'v'}, 'endp')
     log_sp.assert_called_once_with(
         'attr', 'X', 'registry', ann.return_value, binary_ann.return_value, False)
 
@@ -127,12 +126,13 @@ def test_zipkin_logging_context_logs_service_span_if_sampled_and_success(
     context.start_timestamp = 24
     context.response_status_code = 200
     context.handler = mock.Mock(spans={})
+    context.binary_annotations_dict = {'k': 'v'}
     time.return_value = 42
     context.zipkin_attrs.is_sampled = True
     context.log_spans()
     log_span.assert_called_once_with(
-        context.zipkin_attrs, 24, 42, context.request_path,
-        context.request_path_qs, 'endpoint_attrs', context.request_method,
+        context.zipkin_attrs, 24, 42, context.binary_annotations_dict,
+        'endpoint_attrs', context.request_method,
         context.registry_settings)
 
 
@@ -219,3 +219,24 @@ def test_log_span_raises_error_if_handler_not_defined(thrift_obj, create_sp):
         logging_helper.log_span('attr', 'X', registry, 'ann', 'bann', '_')
     assert ("`zipkin.transport_handler` is a required config property" in str(
         excinfo.value))
+
+
+def test_get_binary_annotations():
+    def set_extra_binary_annotations(req):
+        return {'k': 'v'}
+    registry = mock.Mock(
+        settings={
+            'zipkin.set_extra_binary_annotations': set_extra_binary_annotations
+        })
+    request = mock.Mock(path='/path', path_qs='/path?time=now')
+    request.registry = registry
+
+    annotations = logging_helper.get_binary_annotations(request)
+    expected = {'http.uri': '/path', 'http.uri.qs': '/path?time=now', 'k': 'v'}
+    assert annotations == expected
+
+    # Try it again with no callback specified
+    request.registry.settings = {}
+    del expected['k']
+    annotations = logging_helper.get_binary_annotations(request)
+    assert annotations == expected

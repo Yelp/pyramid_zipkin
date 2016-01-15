@@ -6,10 +6,12 @@ from pyramid_zipkin import zipkin
 @mock.patch('pyramid_zipkin.zipkin.ZipkinLoggingContext', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.create_zipkin_attr', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.create_endpoint', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.get_binary_annotations', autospec=True)
 def test_tween_is_wrapped_by_zipkin_logging_context(
-        endp_mock, attrs_mock, context):
+        binann_mock, endp_mock, attrs_mock, context):
     instance = context.return_value
     attrs_mock.return_value = 'zipkin_attrs'
+    binann_mock.return_value = {'k': 'v'}
     endp_mock.return_value = 'endpoint_attrs'
     tween = zipkin.zipkin_tween(mock.Mock(), 'registry')
     tween(mock.Mock())

@@ -8,11 +8,13 @@ Features include:
 
 * Blacklisting specific route/paths from getting traced.
 
-* `zipkin_tracing_percent` to control the %age of requests getting sampled.
+* ``zipkin_tracing_percent`` to control the percentage of requests getting sampled.
 
-* API `create_headers_for_new_span` to generate new client headers.
+* API ``create_headers_for_new_span`` to generate new client headers.
 
-* Creates `http.uri` binary annotation automatically for each trace.
+* Adds ``http.uri`` and ``http.uri.qs`` binary annotations automatically for each trace.
+
+* Allows configuration of arbitrary additional binary annotations
 
 Install
 -------

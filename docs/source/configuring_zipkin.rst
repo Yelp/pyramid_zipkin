@@ -108,6 +108,21 @@ fine tune as per your use case.
     The method MUST take `request` as a parameter (so that you can make trace
     id deterministic).
 
+
+5. zipkin.set_extra_binary_annotations
+--------------------------------------
+    A method that takes the `request` object as a parameter and produces
+    extra binary annotations. If this config is omitted, only `http.uri`
+    and `http.uri.qs` are added as binary annotations. Example:
+
+    .. code-block:: python
+
+        def set_binary_annotations(request):
+            return {'view': get_view(request)}
+
+        settings['zipkin.set_extra_binary_annotations'] = set_binary_annotations
+
+
 These settings can be added like so:
 
 .. code-block:: python
@@ -117,6 +132,7 @@ These settings can be added like so:
             settings['zipkin.blacklisted_paths'] = [r'^/foo/?']
             settings['zipkin.blacklisted_routes'] = ['bar']
             settings['zipkin.trace_id_generator'] = lambda req: '0x42'
+            settings['zipkin.set_extra_binary_annotations'] = lambda req: {'attr': req.attr}j
             # ...and so on with the other settings...
             config = Configurator(settings=settings)
             config.include('zipkin')

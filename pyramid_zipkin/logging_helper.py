@@ -30,11 +30,10 @@ class ZipkinLoggingContext(object):
         self.zipkin_attrs = zipkin_attrs
         self.endpoint_attrs = endpoint_attrs
         self.handler = log_handler
-        self.request_path = request.path
-        self.request_path_qs = request.path_qs
         self.request_method = request.method
         self.registry_settings = request.registry.settings
         self.response_status_code = 0
+        self.binary_annotations_dict = {}
 
     def __enter__(self):
         """Actions to be taken before request is handled.
@@ -80,9 +79,9 @@ class ZipkinLoggingContext(object):
 
             end_timestamp = time.time()
             log_service_span(self.zipkin_attrs, self.start_timestamp,
-                             end_timestamp, self.request_path,
-                             self.request_path_qs, self.endpoint_attrs,
-                             self.request_method, self.registry_settings)
+                             end_timestamp, self.binary_annotations_dict,
+                             self.endpoint_attrs, self.request_method,
+                             self.registry_settings)
 
 
 class ZipkinLoggerHandler(logging.StreamHandler, object):
@@ -157,6 +156,17 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
         self.store_span(span_name, is_client, annotations, binary_annotations)
 
 
+def get_binary_annotations(request):
+    """Helper method for getting all binary annotations from the request.
+    """
+    annotations = {'http.uri': request.path, 'http.uri.qs': request.path_qs}
+    settings = request.registry.settings
+    if 'zipkin.set_extra_binary_annotations' in settings:
+        annotations.update(
+            settings['zipkin.set_extra_binary_annotations'](request))
+    return annotations
+
+
 def log_span(zipkin_attrs, span_name, registry_settings, annotations,
              binary_annotations, is_client):
     """Creates a span and logs it.
@@ -181,12 +191,13 @@ def log_span(zipkin_attrs, span_name, registry_settings, annotations,
 
 
 def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,
-                     path, path_qs, endpoint, method, registry_settings):
+                     binary_annotations_dict, endpoint, method,
+                     registry_settings):
     """Logs a span with `ss` and `sr` annotations.
     """
     annotations = annotation_list_builder(
         {'sr': start_timestamp, 'ss': end_timestamp}, endpoint)
     binary_annotations = binary_annotation_list_builder(
-        {'http.uri': path, 'http.uri.qs': path_qs}, endpoint)
+        binary_annotations_dict, endpoint)
     log_span(zipkin_attrs, method, registry_settings,
              annotations, binary_annotations, False)
