@@ -11,6 +11,7 @@ from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.thread_local import get_zipkin_attrs
 from pyramid_zipkin.thrift_helper import create_endpoint
 from pyramid_zipkin.thrift_helper import generate_span_id
+from pyramid_zipkin.logging_helper import get_binary_annotations
 from pyramid_zipkin.logging_helper import ZipkinLoggerHandler
 from pyramid_zipkin.logging_helper import ZipkinLoggingContext
 
@@ -32,6 +33,9 @@ def zipkin_tween(handler, registry):
                                   request) as context:
             response = handler(request)
             context.response_status_code = response.status_code
+            context.binary_annotations_dict = get_binary_annotations(
+                    request, response)
+
             return response
 
     return tween

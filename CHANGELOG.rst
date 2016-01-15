@@ -1,6 +1,10 @@
+0.5.0 (2016-01-14)
+------------------
+- Add support for `set_extra_binary_annotations` callback.
+
 0.4.0 (2016-01-07)
 ------------------
-- Add `http.uri.qs` annoation which includes query string, `http.uri` doesn't.
+- Add `http.uri.qs` annotation which includes query string, `http.uri` doesn't.
 
 0.3.0 (2015-12-29)
 ------------------

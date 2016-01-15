@@ -111,8 +111,8 @@ def test_blacklisted_path_has_no_span(thrift_obj, sampled_trace_id_generator):
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_server_extra_annotations_are_loggd(thrift_obj,
-                                            sampled_trace_id_generator):
+def test_server_extra_annotations_are_logged(thrift_obj,
+                                             sampled_trace_id_generator):
     settings = {
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
@@ -133,3 +133,32 @@ def test_server_extra_annotations_are_loggd(thrift_obj,
     TestApp(main({}, **settings)).get('/sample_v2', status=200)
 
     assert thrift_obj.call_count == 2
+
+
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_binary_annotations(thrift_obj, default_trace_id_generator):
+    def set_extra_binary_annotations(request, response):
+        return {'other': request.registry.settings['other_attr']}
+
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+        'zipkin.set_extra_binary_annotations': set_extra_binary_annotations,
+        'other_attr': '42',
+    }
+
+    def validate_span(span_obj):
+        # Assert that the only present binary_annotations are ones we expect
+        expected_annotations = {
+                'http.uri': '/sample', 'http.uri.qs': '/sample?test=1',
+                'other': '42'}
+        result_span = test_helper.massage_result_span(span_obj)
+        for ann in result_span['binary_annotations']:
+            assert ann['value'] == expected_annotations.pop(ann['key'])
+        assert len(expected_annotations) == 0
+
+    thrift_obj.side_effect = validate_span
+
+    TestApp(main({}, **settings)).get('/sample?test=1', status=200)
+
+    assert thrift_obj.call_count == 1
