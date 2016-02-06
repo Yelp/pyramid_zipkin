@@ -117,22 +117,29 @@ def test_server_extra_annotations_are_logged(thrift_obj,
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
-    def validate_span(span_obj):
+    def validate_span_foo(span_obj):
         result_span = test_helper.massage_result_span(span_obj)
-        if result_span['name'] == 'v2':
-            assert (1, 0) == (result_span['id'], result_span['parent_id'])
-            bar_ann = result_span['annotations'][0]
-            assert ('bar', 1000000) == (bar_ann['value'], bar_ann['timestamp'])
-            foo_ann = result_span['annotations'][1]
-            assert ('foo', 2000000) == (foo_ann['value'], foo_ann['timestamp'])
-            b_ann = result_span['binary_annotations'][0]
-            assert ('ping', 'pong') == (b_ann['key'], b_ann['value'])
+        assert (1, 0) == (result_span['id'], result_span['parent_id'])
+        ann = result_span['annotations'][0]
+        assert ('foo', 2000000) == (ann['value'], ann['timestamp'])
+        b_ann = result_span['binary_annotations'][0]
+        assert ('ping', 'pong') == (b_ann['key'], b_ann['value'])
 
-    thrift_obj.side_effect = validate_span
+    def validate_span_bar(span_obj):
+        result_span = test_helper.massage_result_span(span_obj)
+        assert (1, 0) == (result_span['id'], result_span['parent_id'])
+        ann = result_span['annotations'][0]
+        assert ('bar', 1000000) == (ann['value'], ann['timestamp'])
+        b_ann = result_span['binary_annotations'][0]
+        assert ('ping', 'pong') == (b_ann['key'], b_ann['value'])
+
+    thrift_obj.side_effect = [lambda _: None,  # first span is sr, ss - ignore
+                              validate_span_foo,
+                              validate_span_bar]
 
     TestApp(main({}, **settings)).get('/sample_v2', status=200)
 
-    assert thrift_obj.call_count == 2
+    assert thrift_obj.call_count == 3
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
@@ -149,9 +156,9 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
 
     def validate_span(span_obj):
         # Assert that the only present binary_annotations are ones we expect
-        expected_annotations = {
-                'http.uri': '/sample', 'http.uri.qs': '/sample?test=1',
-                'other': '42'}
+        expected_annotations = {'http.uri': '/sample',
+                                'http.uri.qs': '/sample?test=1',
+                                'other': '42'}
         result_span = test_helper.massage_result_span(span_obj)
         for ann in result_span['binary_annotations']:
             assert ann['value'] == expected_annotations.pop(ann['key'])
