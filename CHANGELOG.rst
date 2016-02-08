@@ -1,3 +1,8 @@
+0.6.0 (2016-02-06)
+------------------
+- Fix bug which was squashing identical span names.
+- over=EXCVIEW ordering instead of over=MAIN
+
 0.5.0 (2016-01-14)
 ------------------
 - Add support for `set_extra_binary_annotations` callback.
