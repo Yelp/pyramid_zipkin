@@ -68,7 +68,7 @@ class ZipkinLoggingContext(object):
         a success. It also logs the service `ss` and `sr` annotations.
         """
         if self.zipkin_attrs.is_sampled and self.is_response_success():
-            for _, span in self.handler.spans.items():
+            for span in self.handler.spans:
                 annotations = annotation_list_builder(
                     span['annotations'], self.endpoint_attrs)
                 binary_annotations = binary_annotation_list_builder(
@@ -94,32 +94,22 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
     def __init__(self, zipkin_attrs):
         super(ZipkinLoggerHandler, self).__init__()
         self.zipkin_attrs = zipkin_attrs
-        self.spans = {}
+        self.spans = []
 
     def store_span(
             self, span_name, is_client, annotations, binary_annotations):
-        """Store the annotations into a dict and send them later.
+        """Store the annotations into the list and send them later.
 
         :param span_name: string name of the span to be used.
         :param is_client: boolean to decide whether it is a client/server span
         :param annotations: dict of annotations logged.
         :param binary_annotations: dict of binary annotations logged.
-
-        .. note::
-
-            If duplicate annotations are logged for the same span name, only
-            the last one will be logged.
         """
-        key = (span_name, is_client)
-        if key in self.spans:
-            self.spans[key]['annotations'].update(annotations)
-            self.spans[key]['binary_annotations'].update(binary_annotations)
-        else:
-            self.spans[key] = {'annotations': annotations,
-                               'binary_annotations': binary_annotations,
-                               'span_name': span_name,
-                               'is_client': is_client
-                               }
+        self.spans.append({'annotations': annotations,
+                           'binary_annotations': binary_annotations,
+                           'span_name': span_name,
+                           'is_client': is_client
+                           })
 
     def emit(self, record):
         """Handle each record message.

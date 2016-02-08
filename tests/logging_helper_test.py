@@ -105,8 +105,8 @@ def test_zipkin_logging_context_logs_annotated_span_if_sampled_and_success(
     context.start_timestamp = 24
     context.response_status_code = 200
     context.registry_settings = {'zipkin.transport_handler': (lambda x, y: None)}
-    spans = {'foo': {'annotations': 'ann1', 'binary_annotations': 'bann1',
-             'span_name': 'foo', 'is_client': False}}
+    spans = [{'annotations': 'ann1', 'binary_annotations': 'bann1',
+             'span_name': 'foo', 'is_client': False}]
     context.handler = mock.Mock(spans=spans)
     context.zipkin_attrs.is_sampled = True
     context.log_spans()
@@ -125,7 +125,7 @@ def test_zipkin_logging_context_logs_service_span_if_sampled_and_success(
         log_span, time, _, context):
     context.start_timestamp = 24
     context.response_status_code = 200
-    context.handler = mock.Mock(spans={})
+    context.handler = mock.Mock(spans=[])
     context.binary_annotations_dict = {'k': 'v'}
     time.return_value = 42
     context.zipkin_attrs.is_sampled = True
@@ -157,28 +157,13 @@ def test_zipkin_handler_successfully_emits_sampled_record(
     store_sp.assert_called_once_with('foo', False, 'ann1', 'bann1')
 
 
-def test_store_span_creates_a_new_entry_to_dict_if_span_name_not_present():
+def test_store_span_appends_to_span():
     handler = logging_helper.ZipkinLoggerHandler('foo')
     handler.store_span('a', False, {'foo': 2}, {'bar': 'baz'})
-    assert handler.spans == {
-        ('a', False): {'annotations': {'foo': 2},
-                       'binary_annotations': {'bar': 'baz'},
-                       'span_name': 'a',
-                       'is_client': False}}
-
-
-def test_store_span_adds_to_current_entry_if_span_name_already_present():
-    handler = logging_helper.ZipkinLoggerHandler('foo')
-    handler.spans = {('a', False): {'annotations': {'a': 2},
-                                    'binary_annotations': {'asdf': 'qwe'},
-                                    'span_name': 'a',
-                                    'is_client': False}}
-    handler.store_span('a', False, {'foo': 3}, {'bar': 'baz'})
-    assert handler.spans == {
-        ('a', False): {'annotations': {'a': 2, 'foo': 3},
-                       'binary_annotations': {'asdf': 'qwe', 'bar': 'baz'},
-                       'span_name': 'a',
-                       'is_client': False}}
+    assert handler.spans == [{'annotations': {'foo': 2},
+                              'binary_annotations': {'bar': 'baz'},
+                              'span_name': 'a',
+                              'is_client': False}]
 
 
 def test_zipkin_handler_raises_exception_if_ann_and_bann_not_provided(

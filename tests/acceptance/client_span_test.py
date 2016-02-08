@@ -13,23 +13,27 @@ def test_client_ann_are_logged_as_new_spans(thrift_obj,
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
-    def validate_span(span_obj):
+    def validate_span_foo(span_obj):
         result_span = test_helper.massage_result_span(span_obj)
-        if result_span['name'] == 'v2_client':
-            assert 1 != result_span['id']  # id is a new span id
-            assert 1 == result_span['parent_id']  # old id becomes parent.
-            bar_ann = result_span['annotations'][0]
-            assert ('bar_client', 1000000) == (bar_ann['value'],
-                                               bar_ann['timestamp'])
-            foo_ann = result_span['annotations'][1]
-            assert ('foo_client', 2000000) == (foo_ann['value'],
-                                               foo_ann['timestamp'])
+        assert 1 != result_span['id']  # id is a new span id
+        assert 1 == result_span['parent_id']  # old id becomes parent.
+        ann = result_span['annotations'][0]
+        assert ('foo_client', 2000000) == (ann['value'], ann['timestamp'])
 
-    thrift_obj.side_effect = validate_span
+    def validate_span_bar(span_obj):
+        result_span = test_helper.massage_result_span(span_obj)
+        assert 1 != result_span['id']  # id is a new span id
+        assert 1 == result_span['parent_id']  # old id becomes parent.
+        ann = result_span['annotations'][0]
+        assert ('bar_client', 1000000) == (ann['value'], ann['timestamp'])
+
+    thrift_obj.side_effect = [lambda _: None,  # first span is sr, ss - ignore
+                              validate_span_foo,
+                              validate_span_bar]
 
     TestApp(main({}, **settings)).get('/sample_v2_client', status=200)
 
-    assert thrift_obj.call_count == 2
+    assert thrift_obj.call_count == 3
 
 
 def test_headers_created_for_sampled_child_span(sampled_trace_id_generator):
