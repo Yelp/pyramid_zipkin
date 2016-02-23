@@ -73,6 +73,7 @@ def test_zipkin_logging_context_stores_start_timestamp_on_entry(
             autospec=True)
 def test_zipkin_logging_context_pops_zikin_attr_from_thread_local_on_exit(
         pop_mock, logger, context):
+    context.registry_settings = {}
     context.__exit__('_', '_', '_')
     pop_mock.assert_called_once_with()
 
@@ -80,6 +81,7 @@ def test_zipkin_logging_context_pops_zikin_attr_from_thread_local_on_exit(
 @mock.patch('pyramid_zipkin.logging_helper.zipkin_logger', autospec=True)
 def test_zipkin_logging_context_removes_log_handler_on_exit(
         logger, context):
+    context.registry_settings = {}
     context.__exit__('_', '_', '_')
     logger.removeHandler.assert_called_once_with(context.handler)
 
@@ -89,8 +91,18 @@ def test_zipkin_logging_context_removes_log_handler_on_exit(
             autospec=True)
 def test_zipkin_logging_context_doesnt_log_if_span_not_sampled(
         log_span, _, context):
+    context.registry_settings = {}
     context.__exit__('_', '_', '_')
     assert 0 == log_span.call_count
+
+
+@mock.patch('pyramid_zipkin.logging_helper.zipkin_logger', autospec=True)
+def test_zipkin_logging_context_calls_post_logging_hook(
+        logger, context):
+    post_logging_hook = mock.Mock()
+    context.registry_settings = {'zipkin.post_logging_hook': post_logging_hook}
+    context.__exit__('_', '_', '_')
+    post_logging_hook.assert_called_once_with(context.request)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.annotation_list_builder',

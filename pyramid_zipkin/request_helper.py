@@ -110,7 +110,8 @@ def is_tracing(request):
     1) Check whether the current request path is blacklisted.
     2) If not, check whether the current request route is blacklisted.
     3) If not, check if specific sampled header is present in the request.
-    4) If not, Use a tracing percent (default: 0.5%) to decide.
+    4) If not, check if tracing_override is set and returns True.
+    5) If not, Use a tracing percent (default: 0.5%) to decide.
 
     :param request: pyramid request object
 
@@ -123,6 +124,10 @@ def is_tracing(request):
     elif 'X-B3-Sampled' in request.headers:
         return request.headers.get('X-B3-Sampled') == '1'
     else:
+        override_func = request.registry.settings.get('zipkin.tracing_override')
+        if override_func and override_func(request):
+            return True
+
         zipkin_tracing_percent = request.registry.settings.get(
             'zipkin.tracing_percent', DEFAULT_REQUEST_TRACING_PERCENT)
         return should_sample_as_per_zipkin_tracing_percent(
@@ -141,7 +146,8 @@ def create_zipkin_attr(request):
 
     trace_id = request.zipkin_trace_id
     is_sampled = is_tracing(request)
-    span_id = request.headers.get('X-B3-SpanId', '1')
+    span_id = request.headers.get('X-B3-SpanId', generate_span_id())
+    request.headers['X-B3-SpanId'] = span_id
     parent_span_id = request.headers.get('X-B3-ParentSpanId', '0')
     flags = request.headers.get('X-B3-Flags', '0')
     return ZipkinAttrs(trace_id=trace_id, span_id=span_id,
