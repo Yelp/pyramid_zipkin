@@ -147,7 +147,6 @@ def create_zipkin_attr(request):
     trace_id = request.zipkin_trace_id
     is_sampled = is_tracing(request)
     span_id = request.headers.get('X-B3-SpanId', generate_span_id())
-    request.headers['X-B3-SpanId'] = span_id
     parent_span_id = request.headers.get('X-B3-ParentSpanId', '0')
     flags = request.headers.get('X-B3-Flags', '0')
     return ZipkinAttrs(trace_id=trace_id, span_id=span_id,
