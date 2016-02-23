@@ -30,7 +30,7 @@ def generate_random_64bit_string():
     return codecs.encode(os.urandom(8), 'hex_codec')
 
 
-def thrift_compatble_string(token_id):
+def thrift_compatible_string(token_id):
     """Converts token to a thrift compatible 64bit string"""
     # Zipkin passes unsigned values in signed types because Thrift has no
     # unsigned types, so we have to convert the value.
@@ -43,7 +43,7 @@ def generate_span_id():
 
     :returns: string representation of zipkin span id
     """
-    return thrift_compatble_string(generate_random_64bit_string())
+    return thrift_compatible_string(generate_random_64bit_string())
 
 
 def get_trace_id(request):
@@ -59,7 +59,7 @@ def get_trace_id(request):
     elif 'zipkin.trace_id_generator' in request.registry.settings:
         return request.registry.settings['zipkin.trace_id_generator'](request)
     else:
-        return thrift_compatble_string(generate_random_64bit_string())
+        return thrift_compatible_string(generate_random_64bit_string())
 
 
 def should_not_sample_path(request):

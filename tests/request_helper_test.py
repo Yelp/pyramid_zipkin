@@ -135,7 +135,7 @@ def test_get_trace_id_runs_custom_trace_id_generator_if_present(request):
     assert 'foo' == request_helper.get_trace_id(request)
 
 
-@mock.patch('pyramid_zipkin.request_helper.thrift_compatble_string',
+@mock.patch('pyramid_zipkin.request_helper.thrift_compatible_string',
             autospec=True)
 def test_get_trace_id_returns_some_random_id_by_default(compat, request):
     compat.return_value = 'foo'
