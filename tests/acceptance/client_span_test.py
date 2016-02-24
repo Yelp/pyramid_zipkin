@@ -43,15 +43,18 @@ def test_headers_created_for_sampled_child_span(sampled_trace_id_generator):
 
     expected = {
         'X-B3-Flags': '0',
-        'X-B3-ParentSpanId': '1',
+        'X-B3-ParentSpanId': '0x1234',
         'X-B3-Sampled': '1',
         'X-B3-TraceId': '0x0',
         }
 
-    headers = TestApp(main({}, **settings)).get('/sample_child_span',
-                                                status=200)
+    with mock.patch('pyramid_zipkin.request_helper.generate_span_id') \
+            as mock_generate_span_id:
+        mock_generate_span_id.return_value = '0x1234'
+        headers = TestApp(main({}, **settings)).get('/sample_child_span',
+                                                    status=200)
     headers_json = headers.json
-    headers_json.pop('X-B3-SpanId')  # Randomnly generated - Ignore.
+    headers_json.pop('X-B3-SpanId')  # Randomly generated - Ignore.
 
     assert expected == headers_json
 
@@ -66,12 +69,15 @@ def test_headers_created_for_unsampled_child_span(default_trace_id_generator):
         'X-B3-Flags': '0',
         'X-B3-Sampled': '0',
         'X-B3-TraceId': '0x42',
-        'X-B3-ParentSpanId': '1',
+        'X-B3-ParentSpanId': '0x1234',
         }
 
-    headers = TestApp(main({}, **settings)).get('/sample_child_span',
-                                                status=200)
+    with mock.patch('pyramid_zipkin.request_helper.generate_span_id') \
+            as mock_generate_span_id:
+        mock_generate_span_id.return_value = '0x1234'
+        headers = TestApp(main({}, **settings)).get('/sample_child_span',
+                                                    status=200)
     headers_json = headers.json
-    headers_json.pop('X-B3-SpanId')  # Randomnly generated - Ignore.
+    headers_json.pop('X-B3-SpanId')  # Randomly generated - Ignore.
 
     assert expected == headers_json

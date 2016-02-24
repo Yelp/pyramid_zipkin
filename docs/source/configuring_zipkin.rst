@@ -103,7 +103,7 @@ fine tune as per your use case.
 5. zipkin.trace_id_generator
 ----------------------------
     A method definition to generate a `trace_id` for the request. By default,
-    it creates a randon trace id otherwise.
+    it creates a random trace id otherwise.
 
     The method MUST take `request` as a parameter (so that you can make trace
     id deterministic).
@@ -125,6 +125,36 @@ fine tune as per your use case.
         settings['zipkin.set_extra_binary_annotations'] = set_binary_annotations
 
 
+7. zipkin.tracing_override
+--------------------------
+    A method that takes a `request` parameter and returns True if the request should be traced.
+    Note that this override function does not override blacklisted paths/routes. If this function
+    returns False, the request may still be traced according to the tracing percentage. Example:
+
+    .. code-block:: python
+
+        def custom_override_func(request):
+            # ...
+            return True
+            # else, return False
+
+        settings['zipkin.tracing_override'] = custom_override_func
+
+
+8. zipkin.post_logging_hook
+---------------------------
+    A method that takes a `request` parameter and is called after the trace is logged and before
+    the zipkin context exits. This gives the ability to execute custom code after the zipkin
+    context manager successfully logs a trace.
+
+    .. code-block:: python
+
+        def post_logging_hook(request):
+            # custom logic, clean-up tasks, etc.
+
+        settings['zipkin.post_logging_hook'] = post_logging_hook
+
+
 These settings can be added like so:
 
 .. code-block:: python
@@ -135,6 +165,8 @@ These settings can be added like so:
             settings['zipkin.blacklisted_routes'] = ['bar']
             settings['zipkin.trace_id_generator'] = lambda req: '0x42'
             settings['zipkin.set_extra_binary_annotations'] = lambda req, resp: {'attr': str(req.attr)}
+            settings['zipkin.tracing_override'] = lambda req: False
+            settings['zipkin.post_logging_hook'] = lambda req: None
             # ...and so on with the other settings...
             config = Configurator(settings=settings)
             config.include('zipkin')

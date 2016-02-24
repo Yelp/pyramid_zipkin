@@ -1,3 +1,7 @@
+0.7.0 (2016-02-23)
+------------------
+- Add `tracing_override` and `post_logging_hook` settings.
+
 0.6.0 (2016-02-06)
 ------------------
 - Fix bug which was squashing identical span names.

@@ -81,7 +81,7 @@ def test_is_tracing_returns_true_if_sampled_value_in_header_was_true(request):
     assert request_helper.is_tracing(request)
 
 
-def test_is_tracing_returns_false_if_sampled_value_in_header_was_fals(request):
+def test_is_tracing_returns_false_if_sampled_value_in_header_was_false(request):
     request.headers = {'X-B3-Sampled': '0'}
     assert not request_helper.is_tracing(request)
 
@@ -97,6 +97,33 @@ def test_is_tracing_returns_what_tracing_percent_method_returns_for_rest(
         request_helper.DEFAULT_REQUEST_TRACING_PERCENT, '42')
 
 
+@mock.patch(
+    'pyramid_zipkin.request_helper.should_sample_as_per_zipkin_tracing_percent',
+    autospec=True)
+def test_is_tracing_returns_false_if_override_does_not_exist(mock, request):
+    mock.return_value = False
+    request.registry.settings = {}
+    assert not request_helper.is_tracing(request)
+
+
+@mock.patch(
+    'pyramid_zipkin.request_helper.should_sample_as_per_zipkin_tracing_percent',
+    autospec=True)
+def test_is_tracing_returns_false_if_override_returns_false(mock, request):
+    mock.return_value = False
+    request.registry.settings = {
+        'zipkin.tracing_override': lambda request: False,
+    }
+    assert not request_helper.is_tracing(request)
+
+
+def test_is_tracing_returns_true_if_override_returns_true(request):
+    request.registry.settings = {
+        'zipkin.tracing_override': lambda request: True,
+    }
+    assert request_helper.is_tracing(request)
+
+
 def test_get_trace_id_returns_header_value_if_present(request):
     request.headers = {'X-B3-TraceId': 'foo'}
     request.registry.setttings = {'zipkin.trace_id_generator': lambda r: 'foo'}
@@ -108,7 +135,7 @@ def test_get_trace_id_runs_custom_trace_id_generator_if_present(request):
     assert 'foo' == request_helper.get_trace_id(request)
 
 
-@mock.patch('pyramid_zipkin.request_helper.thrift_compatble_string',
+@mock.patch('pyramid_zipkin.request_helper.thrift_compatible_string',
             autospec=True)
 def test_get_trace_id_returns_some_random_id_by_default(compat, request):
     compat.return_value = 'foo'

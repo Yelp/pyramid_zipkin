@@ -30,6 +30,7 @@ class ZipkinLoggingContext(object):
         self.zipkin_attrs = zipkin_attrs
         self.endpoint_attrs = endpoint_attrs
         self.handler = log_handler
+        self.request = request
         self.request_method = request.method
         self.registry_settings = request.registry.settings
         self.response_status_code = 0
@@ -49,13 +50,16 @@ class ZipkinLoggingContext(object):
     def __exit__(self, _type, _value, _traceback):
         """Actions to be taken post request handling.
         1) Record the end timestamp.
-        2) Pop zipkin attributes from thread_local stack
-        3) Detach `zipkin_logger` handler.
-        4) And finally, if sampled, log the service annotations to scribe
+        2) If sampled, log the service annotations to scribe
+        3) Pop zipkin attributes from thread_local stack
+        4) Detach `zipkin_logger` handler.
+        5) And finally, run the post logging hook if defined.
         """
         self.log_spans()
         pop_zipkin_attrs()
         zipkin_logger.removeHandler(self.handler)
+        if 'zipkin.post_logging_hook' in self.registry_settings:
+            self.registry_settings['zipkin.post_logging_hook'](self.request)
 
     def is_response_success(self):
         """Returns a boolean whether the response was a success
