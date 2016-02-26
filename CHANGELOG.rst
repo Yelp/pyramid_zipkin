@@ -1,3 +1,7 @@
+0.7.1 (2016-02-26)
+------------------
+- Don't re-compile path regexes
+
 0.7.0 (2016-02-24)
 ------------------
 - Don't enter ZipkinLoggingContext if request is not sampled.
