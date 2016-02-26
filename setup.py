@@ -19,6 +19,7 @@ setup(
     package_data = { '': [ '*.thrift' ] },
     install_requires = [
         'pyramid',
+        'six',
         'thriftpy',
     ],
     classifiers=[

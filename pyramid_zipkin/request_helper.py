@@ -6,6 +6,7 @@ import re
 import struct
 from collections import namedtuple
 
+import six
 from pyramid.interfaces import IRoutesMapper
 
 
@@ -74,7 +75,7 @@ def should_not_sample_path(request):
     # Only compile strings, since even recompiling existing
     # compiled regexes takes time.
     regexes = [
-        re.compile(r) if isinstance(r, str) else r
+        re.compile(r) if isinstance(r, six.string_types) else r
         for r in blacklisted_paths
     ]
     return any(r.match(request.path) for r in regexes)

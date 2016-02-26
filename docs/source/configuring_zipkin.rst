@@ -74,8 +74,8 @@ fine tune as per your use case.
 2. zipkin.blacklisted_paths
 ---------------------------
     A list of paths as strings, regex strings, or compiled regexes, any of which if matched with the
-    request path will not be sampled. Pre-compiled regexes will be the fastest. Won't behave well with
-    uncompiled unicode strings. Defaults to `[]`. Example:
+    request path will not be sampled. Pre-compiled regexes will be the fastest.
+    Defaults to `[]`. Example:
 
     .. code-block:: python
 
