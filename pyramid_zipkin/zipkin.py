@@ -35,9 +35,9 @@ def zipkin_tween(handler, registry):
 
         # If the request IS sampled, we create thrift objects, store
         # thread-local variables, etc, to enter zipkin logging context
-        endpoint_attrs = create_endpoint(request)
+        thrift_endpoint = create_endpoint(request)
         log_handler = ZipkinLoggerHandler(zipkin_attrs)
-        with ZipkinLoggingContext(zipkin_attrs, endpoint_attrs, log_handler,
+        with ZipkinLoggingContext(zipkin_attrs, thrift_endpoint, log_handler,
                                   request) as context:
             response = handler(request)
             context.response_status_code = response.status_code

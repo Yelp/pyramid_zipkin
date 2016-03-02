@@ -14,7 +14,7 @@ def _test_zipkin_context(
     attrs_mock.return_value = ZipkinAttrs(
         'trace_id', 'span_id', 'parent_span_id', 'flags', is_sampled)
     binann_mock.return_value = {'k': 'v'}
-    endp_mock.return_value = 'endpoint_attrs'
+    endp_mock.return_value = 'thrift_endpoint'
     tween = zipkin.zipkin_tween(mock.Mock(), 'registry')
     tween(mock.Mock())
     return instance

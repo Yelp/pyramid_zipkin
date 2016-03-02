@@ -29,12 +29,30 @@ def test_create_span_creates_a_default_span_object(
            'id': get_id('23')})
 
 
-def test_create_endpoint_creates_correct_endpoint(request):
+@mock.patch('socket.gethostbyname', autospec=True)
+def test_create_endpoint_creates_correct_endpoint(gethostbyname, request):
+    gethostbyname.return_value = '0.0.0.0'
     request.registry.settings = {'service_name': 'foo'}
     request.server_port = 8080
     endpoint = thrift_helper.create_endpoint(request)
     assert endpoint.service_name == 'foo'
     assert endpoint.port == 8080
+    # An IP address of 0.0.0.0 unpacks to just 0
+    assert endpoint.ipv4 == 0
+
+
+@mock.patch('socket.gethostbyname', autospec=True)
+def test_copy_endpoint_with_new_service_name(gethostbyname, request):
+    gethostbyname.return_value = '0.0.0.0'
+    request.registry.settings = {'service_name': 'foo'}
+    request.server_port = 8080
+    endpoint = thrift_helper.create_endpoint(request)
+    new_endpoint = thrift_helper.copy_endpoint_with_new_service_name(
+            endpoint, 'blargh')
+    assert new_endpoint.port == 8080
+    assert new_endpoint.service_name == 'blargh'
+    # An IP address of 0.0.0.0 unpacks to just 0
+    assert endpoint.ipv4 == 0
 
 
 def test_get_id_with_empty_string():
