@@ -8,6 +8,7 @@ from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import annotation_list_builder
 from pyramid_zipkin.thrift_helper import binary_annotation_list_builder
+from pyramid_zipkin.thrift_helper import copy_endpoint_with_new_service_name
 from pyramid_zipkin.thrift_helper import create_span
 from pyramid_zipkin.thrift_helper import thrift_obj_in_bytes
 
@@ -21,14 +22,14 @@ class ZipkinLoggingContext(object):
     stores the zipkin attributes on its creation.
 
     :type zipkin_attrs: :class:`pyramid_zipkin.request_helper.ZipkinAttrs`
-    :type endpoint_attrs: :class:`pyramid_zipkin.zipkinCore.ttypes.Endpoint`
+    :type thrift_endpoint: :class:`pyramid_zipkin.zipkinCore.ttypes.Endpoint`
     :param log_handler: log handler to be attached to the module logger.
     :type log_handler: :class:`pyramid_zipkin.logging_helper.ZipkinLoggerHandler`
     :param request: active pyramid request object
     """
-    def __init__(self, zipkin_attrs, endpoint_attrs, log_handler, request):
+    def __init__(self, zipkin_attrs, thrift_endpoint, log_handler, request):
         self.zipkin_attrs = zipkin_attrs
-        self.endpoint_attrs = endpoint_attrs
+        self.thrift_endpoint = thrift_endpoint
         self.handler = log_handler
         self.request_method = request.method
         self.registry_settings = request.registry.settings
@@ -69,10 +70,18 @@ class ZipkinLoggingContext(object):
         """
         if self.zipkin_attrs.is_sampled and self.is_response_success():
             for span in self.handler.spans:
+                # If a logged client span overrode the 'service_name' attr,
+                # swap that out.
+                if span['service_name'] is None:
+                    endpoint = self.thrift_endpoint
+                else:
+                    endpoint = copy_endpoint_with_new_service_name(
+                        self.thrift_endpoint, span['service_name']
+                    )
                 annotations = annotation_list_builder(
-                    span['annotations'], self.endpoint_attrs)
+                    span['annotations'], endpoint)
                 binary_annotations = binary_annotation_list_builder(
-                    span['binary_annotations'], self.endpoint_attrs)
+                    span['binary_annotations'], endpoint)
                 log_span(self.zipkin_attrs, span['span_name'],
                          self.registry_settings, annotations,
                          binary_annotations, span['is_client'])
@@ -80,7 +89,7 @@ class ZipkinLoggingContext(object):
             end_timestamp = time.time()
             log_service_span(self.zipkin_attrs, self.start_timestamp,
                              end_timestamp, self.binary_annotations_dict,
-                             self.endpoint_attrs, self.request_method,
+                             self.thrift_endpoint, self.request_method,
                              self.registry_settings)
 
 
@@ -97,19 +106,26 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
         self.spans = []
 
     def store_span(
-            self, span_name, is_client, annotations, binary_annotations):
+        self, span_name, is_client,
+        annotations, binary_annotations,
+        service_name,
+    ):
         """Store the annotations into the list and send them later.
 
         :param span_name: string name of the span to be used.
         :param is_client: boolean to decide whether it is a client/server span
         :param annotations: dict of annotations logged.
         :param binary_annotations: dict of binary annotations logged.
+        :param service_name: str of overridden service name, or None if
+            service_name from main context is not to be overridden.
         """
-        self.spans.append({'annotations': annotations,
-                           'binary_annotations': binary_annotations,
-                           'span_name': span_name,
-                           'is_client': is_client
-                           })
+        self.spans.append({
+            'annotations': annotations,
+            'binary_annotations': binary_annotations,
+            'span_name': span_name,
+            'is_client': is_client,
+            'service_name': service_name,
+        })
 
     def emit(self, record):
         """Handle each record message.
@@ -143,7 +159,13 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
             raise ZipkinError("Atleast one of annotation/binary annotation has"
                               " to be provided for {0} span".format(span_name))
         is_client = record.msg.get('type', 'service') == 'client'
-        self.store_span(span_name, is_client, annotations, binary_annotations)
+        # Client spans can override 'service_name' for trace readability
+        service_name = record.msg.get('service_name', None)
+        self.store_span(
+            span_name, is_client,
+            annotations, binary_annotations,
+            service_name,
+        )
 
 
 def get_binary_annotations(request, response):
@@ -185,13 +207,13 @@ def log_span(zipkin_attrs, span_name, registry_settings, annotations,
 
 
 def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,
-                     binary_annotations_dict, endpoint, method,
+                     binary_annotations_dict, thrift_endpoint, method,
                      registry_settings):
     """Logs a span with `ss` and `sr` annotations.
     """
     annotations = annotation_list_builder(
-        {'sr': start_timestamp, 'ss': end_timestamp}, endpoint)
+        {'sr': start_timestamp, 'ss': end_timestamp}, thrift_endpoint)
     binary_annotations = binary_annotation_list_builder(
-        binary_annotations_dict, endpoint)
+        binary_annotations_dict, thrift_endpoint)
     log_span(zipkin_attrs, method, registry_settings,
              annotations, binary_annotations, False)

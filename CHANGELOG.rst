@@ -1,3 +1,8 @@
+0.8.0 (2016-03-01)
+------------------
+- Add ability to override "service_name" attribute when logging client
+  spans.
+
 0.7.1 (2016-02-26)
 ------------------
 - Don't re-compile path regexes

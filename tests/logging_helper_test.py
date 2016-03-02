@@ -11,7 +11,7 @@ def context():
     attr = mock.Mock(is_sampled=False)
     request = mock.Mock()
     return logging_helper.ZipkinLoggingContext(
-        attr, 'endpoint_attrs', 'log_handler', request)
+        attr, 'thrift_endpoint', 'log_handler', request)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.annotation_list_builder',
@@ -93,6 +93,23 @@ def test_zipkin_logging_context_doesnt_log_if_span_not_sampled(
     assert 0 == log_span.call_count
 
 
+def test_zipkin_logging_context_logs_client_span_if_sampled_and_success(
+        context):
+    # Tests that client spans collected in a ZipkinLoggingContext get properly
+    # logged.
+    _assert_logged_client_spans(context, None, 'thrift_endpoint')
+
+
+@mock.patch('pyramid_zipkin.logging_helper.copy_endpoint_with_new_service_name',
+            autospec=True)
+def test_zipkin_logging_context_logs_client_span_with_new_endpoint_name(
+        copy_endpoint, context):
+    # Tests that client spans collected in a ZipkinLoggingContext get properly
+    # logged with new "service_name" attribute.
+    copy_endpoint.return_value = 'new_thrift_endpoint'
+    _assert_logged_client_spans(context, 'blargh', 'new_thrift_endpoint')
+
+
 @mock.patch('pyramid_zipkin.logging_helper.annotation_list_builder',
             autospec=True)
 @mock.patch('pyramid_zipkin.logging_helper.binary_annotation_list_builder',
@@ -100,20 +117,27 @@ def test_zipkin_logging_context_doesnt_log_if_span_not_sampled(
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 @mock.patch('pyramid_zipkin.logging_helper.log_service_span', autospec=True)
-def test_zipkin_logging_context_logs_annotated_span_if_sampled_and_success(
-        log_span, thrift_obj, create_sp, binary_ann, ann, context):
-    context.start_timestamp = 24
-    context.response_status_code = 200
-    context.registry_settings = {'zipkin.transport_handler': (lambda x, y: None)}
-    spans = [{'annotations': 'ann1', 'binary_annotations': 'bann1',
-             'span_name': 'foo', 'is_client': False}]
-    context.handler = mock.Mock(spans=spans)
-    context.zipkin_attrs.is_sampled = True
-    context.log_spans()
-    ann.assert_called_once_with('ann1', 'endpoint_attrs')
-    binary_ann.assert_called_once_with('bann1', 'endpoint_attrs')
+def _assert_logged_client_spans(
+        logging_context, service_name, thrift_endpoint_mock,
+        log_span, thrift_obj, create_sp, binary_ann, ann):
+    # Sets a bunch of state on the ZipkinLoggingContext, creates some captured
+    # client spans, and asserts that these spans were properly logged.
+    logging_context.start_timestamp = 24
+    logging_context.response_status_code = 200
+    logging_context.registry_settings = {
+            'zipkin.transport_handler': (lambda x, y: None)}
+    spans = [{
+        'annotations': 'ann1', 'binary_annotations': 'bann1',
+        'span_name': 'foo', 'is_client': False,
+        'service_name': service_name,
+    }]
+    logging_context.handler = mock.Mock(spans=spans)
+    logging_context.zipkin_attrs.is_sampled = True
+    logging_context.log_spans()
+    ann.assert_called_once_with('ann1', thrift_endpoint_mock)
+    binary_ann.assert_called_once_with('bann1', thrift_endpoint_mock)
     create_sp.assert_called_once_with(
-        context.zipkin_attrs, 'foo', ann.return_value,
+        logging_context.zipkin_attrs, 'foo', ann.return_value,
         binary_ann.return_value, False)
     thrift_obj.assert_called_once_with(create_sp.return_value)
 
@@ -132,7 +156,7 @@ def test_zipkin_logging_context_logs_service_span_if_sampled_and_success(
     context.log_spans()
     log_span.assert_called_once_with(
         context.zipkin_attrs, 24, 42, context.binary_annotations_dict,
-        'endpoint_attrs', context.request_method,
+        'thrift_endpoint', context.request_method,
         context.registry_settings)
 
 
@@ -151,19 +175,21 @@ def test_zipkin_handler_successfully_emits_sampled_record(
         store_sp, sampled_zipkin_attr):
     record = mock.Mock()
     record.msg = {'annotations': 'ann1', 'binary_annotations': 'bann1',
-                  'name': 'foo', 'type': 'service'}
+                  'name': 'foo', 'type': 'service',
+                  'service_name': 'blargh'}
     handler = logging_helper.ZipkinLoggerHandler(sampled_zipkin_attr)
     handler.emit(record)
-    store_sp.assert_called_once_with('foo', False, 'ann1', 'bann1')
+    store_sp.assert_called_once_with('foo', False, 'ann1', 'bann1', 'blargh')
 
 
 def test_store_span_appends_to_span():
     handler = logging_helper.ZipkinLoggerHandler('foo')
-    handler.store_span('a', False, {'foo': 2}, {'bar': 'baz'})
+    handler.store_span('a', False, {'foo': 2}, {'bar': 'baz'}, None)
     assert handler.spans == [{'annotations': {'foo': 2},
                               'binary_annotations': {'bar': 'baz'},
                               'span_name': 'a',
-                              'is_client': False}]
+                              'is_client': False,
+                              'service_name': None}]
 
 
 def test_zipkin_handler_raises_exception_if_ann_and_bann_not_provided(

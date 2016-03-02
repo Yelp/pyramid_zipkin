@@ -67,6 +67,21 @@ def create_endpoint(request):
         ipv4=ipv4, port=port, service_name=service_name)
 
 
+def copy_endpoint_with_new_service_name(endpoint, service_name):
+    """Copies a copy of a given endpoint with a new service name.
+    This should be very fast, on the order of several microseconds.
+
+    :param endpoint: existing zipkin_core.Endpoint object
+    :param service_name: str of new service name
+    :returns: zipkin endpoint object
+    """
+    return zipkin_core.Endpoint(
+        ipv4=endpoint.ipv4,
+        port=endpoint.port,
+        service_name=service_name,
+    )
+
+
 def annotation_list_builder(annotations, host):
     """
     Reformat annotations dict to return list of corresponding zipkin_core objects.
