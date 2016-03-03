@@ -1,3 +1,16 @@
+0.8.0 (2016-03-01)
+------------------
+- Add ability to override "service_name" attribute when logging client
+  spans.
+
+0.7.1 (2016-02-26)
+------------------
+- Don't re-compile path regexes
+
+0.7.0 (2016-02-24)
+------------------
+- Don't enter ZipkinLoggingContext if request is not sampled.
+
 0.6.0 (2016-02-06)
 ------------------
 - Fix bug which was squashing identical span names.

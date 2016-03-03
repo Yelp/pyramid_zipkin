@@ -70,10 +70,12 @@ fine tune as per your use case.
 ---------------------
     The `stream_name` the message will be logged to via transport layer. It defaults to `zipkin`.
 
+
 2. zipkin.blacklisted_paths
 ---------------------------
-    A list of paths as strings (accepts regex) any of which if matched with the
-    request path will not be sampled. Defaults to `[]`. Example:
+    A list of paths as strings, regex strings, or compiled regexes, any of which if matched with the
+    request path will not be sampled. Pre-compiled regexes will be the fastest.
+    Defaults to `[]`. Example:
 
     .. code-block:: python
 

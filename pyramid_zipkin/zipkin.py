@@ -27,9 +27,17 @@ def zipkin_tween(handler, registry):
     """
     def tween(request):
         zipkin_attrs = create_zipkin_attr(request)
-        endpoint_attrs = create_endpoint(request)
+
+        # If this request isn't sampled, don't go through the work
+        # of initializing the rest of the zipkin attributes
+        if not zipkin_attrs.is_sampled:
+            return handler(request)
+
+        # If the request IS sampled, we create thrift objects, store
+        # thread-local variables, etc, to enter zipkin logging context
+        thrift_endpoint = create_endpoint(request)
         log_handler = ZipkinLoggerHandler(zipkin_attrs)
-        with ZipkinLoggingContext(zipkin_attrs, endpoint_attrs, log_handler,
+        with ZipkinLoggingContext(zipkin_attrs, thrift_endpoint, log_handler,
                                   request) as context:
             response = handler(request)
             context.response_status_code = response.status_code
