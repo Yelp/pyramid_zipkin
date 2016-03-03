@@ -103,7 +103,7 @@ fine tune as per your use case.
 5. zipkin.trace_id_generator
 ----------------------------
     A method definition to generate a `trace_id` for the request. By default,
-    it creates a randon trace id otherwise.
+    it creates a random trace id otherwise.
 
     The method MUST take `request` as a parameter (so that you can make trace
     id deterministic).

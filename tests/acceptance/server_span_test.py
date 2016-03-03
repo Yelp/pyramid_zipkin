@@ -29,7 +29,10 @@ def test_sample_server_span_with_100_percent_tracing(
 
     thrift_obj.side_effect = validate_span
 
-    TestApp(main({}, **settings)).get('/sample', status=200)
+    with mock.patch('pyramid_zipkin.request_helper.generate_span_id') \
+            as mock_generate_span_id:
+        mock_generate_span_id.return_value = '0x1'
+        TestApp(main({}, **settings)).get('/sample', status=200)
 
     assert thrift_obj.call_count == 1
 
