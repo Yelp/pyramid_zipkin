@@ -1,3 +1,7 @@
+0.8.1 (2016-03-02)
+------------------
+- Spans without a span ID will generate a new span ID by default.
+
 0.8.0 (2016-03-01)
 ------------------
 - Add ability to override "service_name" attribute when logging client
