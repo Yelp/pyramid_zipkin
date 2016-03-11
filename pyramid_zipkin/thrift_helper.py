@@ -126,8 +126,8 @@ def create_span(zipkin_attrs, span_name, annotations, binary_annotations,
     :returns: zipkin span object
     """
 
-    span_id = generate_random_64bit_string() if is_client \
-        else zipkin_attrs.span_id
+    span_id = (generate_random_64bit_string()
+               if is_client else zipkin_attrs.span_id)
     parent_span_id = (
         zipkin_attrs.span_id if is_client else zipkin_attrs.parent_span_id)
     return zipkin_core.Span(**{
