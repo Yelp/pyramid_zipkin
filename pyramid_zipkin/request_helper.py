@@ -39,11 +39,22 @@ def get_trace_id(request):
     :returns: a 64-bit hex string
     """
     if 'X-B3-TraceId' in request.headers:
-        return request.headers['X-B3-TraceId']
+        id = request.headers['X-B3-TraceId']
     elif 'zipkin.trace_id_generator' in request.registry.settings:
-        return request.registry.settings['zipkin.trace_id_generator'](request)
+        id = request.registry.settings['zipkin.trace_id_generator'](request)
     else:
-        return generate_random_64bit_string()
+        id = generate_random_64bit_string()
+
+    assert _is_hex_string(id) and len(id) == 16
+    return id
+
+
+def _is_hex_string(s):
+    try:
+        int(s, 16)
+        return True
+    except ValueError:
+        return False
 
 
 def should_not_sample_path(request):

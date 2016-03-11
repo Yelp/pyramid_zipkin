@@ -126,3 +126,9 @@ def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(mock, request):
         trace_id='12', span_id='23', parent_span_id='34', flags='45',
         is_sampled='bla')
     assert zipkin_attr == request_helper.create_zipkin_attr(request)
+
+
+def test_is_hex_string():
+    assert request_helper._is_hex_string('17133d482ba4f605')
+    assert request_helper._is_hex_string('0' * 16)
+    assert not request_helper._is_hex_string('0123456789abcdefg')
