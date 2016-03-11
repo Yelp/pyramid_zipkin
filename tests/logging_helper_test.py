@@ -153,10 +153,12 @@ def test_zipkin_logging_context_logs_service_span_if_sampled_and_success(
     context.binary_annotations_dict = {'k': 'v'}
     time.return_value = 42
     context.zipkin_attrs.is_sampled = True
+    context.request_method = "get"
+    context.request_path = "/foo"
     context.log_spans()
     log_span.assert_called_once_with(
         context.zipkin_attrs, 24, 42, context.binary_annotations_dict,
-        'thrift_endpoint', context.request_method,
+        'thrift_endpoint', "get /foo",
         context.registry_settings)
 
 
