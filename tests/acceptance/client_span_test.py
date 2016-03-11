@@ -45,7 +45,7 @@ def test_headers_created_for_sampled_child_span(sampled_trace_id_generator):
         'X-B3-Flags': '0',
         'X-B3-ParentSpanId': '17133d482ba4f605',
         'X-B3-Sampled': '1',
-        'X-B3-TraceId': '0000000000000000',
+        'X-B3-TraceId': '0' * 16,
     }
 
     with mock.patch(

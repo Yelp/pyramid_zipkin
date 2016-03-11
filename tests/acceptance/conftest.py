@@ -8,7 +8,7 @@ def default_trace_id_generator(request):
 
 @pytest.fixture
 def sampled_trace_id_generator(request):
-    return lambda request: '0000000000000000'
+    return lambda request: '0' * 16
 
 
 @pytest.fixture
