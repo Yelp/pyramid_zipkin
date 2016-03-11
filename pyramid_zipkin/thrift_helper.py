@@ -7,7 +7,7 @@ import thriftpy
 from thriftpy.transport import TMemoryBuffer
 from thriftpy.protocol.binary import TBinaryProtocol
 
-from pyramid_zipkin.request_helper import generate_span_id
+from pyramid_zipkin.request_helper import generate_random_64bit_string
 
 
 thrift_filepath = os.path.join(os.path.dirname(__file__),
@@ -126,15 +126,15 @@ def create_span(zipkin_attrs, span_name, annotations, binary_annotations,
     :returns: zipkin span object
     """
 
-    span_id = generate_span_id() if is_client else zipkin_attrs.span_id
+    span_id = generate_random_64bit_string() if is_client \
+        else zipkin_attrs.span_id
     parent_span_id = (
         zipkin_attrs.span_id if is_client else zipkin_attrs.parent_span_id)
-
     return zipkin_core.Span(**{
-        "trace_id": get_id(zipkin_attrs.trace_id),
+        "trace_id": unsigned_hex_to_signed_int(zipkin_attrs.trace_id),
         "name": span_name,
-        "id": get_id(span_id),
-        "parent_id": get_id(parent_span_id),
+        "id": unsigned_hex_to_signed_int(span_id),
+        "parent_id": unsigned_hex_to_signed_int(parent_span_id),
         "annotations": annotations,
         "binary_annotations": binary_annotations,
     })
@@ -153,14 +153,12 @@ def thrift_obj_in_bytes(thrift_obj):  # pragma: no cover
     return bytes(trans.getvalue())
 
 
-def get_id(id_value):
-    """
-    Get the integer version of an encoded zipkin ID
+def unsigned_hex_to_signed_int(hex_string):
+    """Converts a 64-bit hex string to a signed int value.
 
-    :param id_value: the string representation of a zipkin ID
-    :returns: int representation of zipkin ID
-    """
-    if len(id_value) == 0:
-        return 0
+    This is due to the fact that Apache Thrift only has signed values.
 
-    return int(id_value, 16)
+    :param hex_string: the string representation of a zipkin ID
+    :returns: signed int representation
+    """
+    return struct.unpack('q', struct.pack('Q', int(hex_string, 16)))[0]

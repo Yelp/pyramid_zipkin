@@ -3,30 +3,51 @@ import mock
 from pyramid_zipkin import thrift_helper
 
 
-@mock.patch('pyramid_zipkin.thrift_helper.generate_span_id', autospec=True)
+@mock.patch(
+    'pyramid_zipkin.thrift_helper.generate_random_64bit_string',
+    autospec=True,
+)
 @mock.patch('pyramid_zipkin.thrift_helper.zipkin_core.Span', autospec=True)
 def test_create_span_creates_a_child_span_object_for_child(
-        Span, gen_span, sampled_zipkin_attr):
-    gen_span.return_value = '56'
-    get_id = thrift_helper.get_id
+        Span, gen_random_str, sampled_zipkin_attr):
+    gen_random_str.return_value = '47133d482ba4f605'
+    unsigned_hex_to_signed_int = thrift_helper.unsigned_hex_to_signed_int
     assert Span.return_value == thrift_helper.create_span(
-        sampled_zipkin_attr, 'foo', 'ann', 'binary_ann', is_client=True)
-    Span.assert_called_once_with(
-        **{'name': 'foo', 'trace_id': 18, 'binary_annotations': 'binary_ann',
-           'annotations': 'ann', 'parent_id': get_id('23'),
-           'id': get_id('56')})
+        zipkin_attrs=sampled_zipkin_attr,
+        span_name='foo',
+        annotations=['annotations'],
+        binary_annotations=['binary_annotations'],
+        is_client=True,
+    )
+    Span.assert_called_once_with(**{
+        'name': 'foo',
+        'trace_id': unsigned_hex_to_signed_int('17133d482ba4f605'),
+        'annotations': ['annotations'],
+        'binary_annotations': ['binary_annotations'],
+        'parent_id': unsigned_hex_to_signed_int('27133d482ba4f605'),
+        'id': unsigned_hex_to_signed_int('47133d482ba4f605'),
+    })
 
 
 @mock.patch('pyramid_zipkin.thrift_helper.zipkin_core.Span', autospec=True)
 def test_create_span_creates_a_default_span_object(
         Span, sampled_zipkin_attr):
-    get_id = thrift_helper.get_id
+    unsigned_hex_to_signed_int = thrift_helper.unsigned_hex_to_signed_int
     assert Span.return_value == thrift_helper.create_span(
-        sampled_zipkin_attr, 'foo', 'ann', 'binary_ann')
-    Span.assert_called_once_with(
-        **{'name': 'foo', 'trace_id': 18, 'binary_annotations': 'binary_ann',
-           'annotations': 'ann', 'parent_id': get_id('34'),
-           'id': get_id('23')})
+        zipkin_attrs=sampled_zipkin_attr,
+        span_name='foo',
+        annotations=['annotations'],
+        binary_annotations=['binary_annotations'],
+        is_client=False,
+    )
+    Span.assert_called_once_with(**{
+        'name': 'foo',
+        'trace_id': unsigned_hex_to_signed_int('17133d482ba4f605'),
+        'binary_annotations': ['binary_annotations'],
+        'annotations': ['annotations'],
+        'parent_id': unsigned_hex_to_signed_int('37133d482ba4f605'),
+        'id': unsigned_hex_to_signed_int('27133d482ba4f605'),
+    })
 
 
 @mock.patch('socket.gethostbyname', autospec=True)
@@ -55,12 +76,11 @@ def test_copy_endpoint_with_new_service_name(gethostbyname, request):
     assert endpoint.ipv4 == 0
 
 
-def test_get_id_with_empty_string():
-    assert thrift_helper.get_id('') == 0
-
-
 def test_get_id_with_number():
-    assert thrift_helper.get_id('42') == int('42', 16)
+    assert thrift_helper.unsigned_hex_to_signed_int('17133d482ba4f605') == \
+        1662740067609015813
+    assert thrift_helper.unsigned_hex_to_signed_int('b6dbb1c2b362bf51') == \
+        -5270423489115668655
 
 
 def test_create_annotation():

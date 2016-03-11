@@ -3,7 +3,6 @@
 import codecs
 import os
 import re
-import struct
 from collections import namedtuple
 
 import six
@@ -28,23 +27,7 @@ class ZipkinAttrs(namedtuple(
 
 def generate_random_64bit_string():
     """Returns a 64 bit ascii encoded string"""
-    return codecs.encode(os.urandom(8), 'hex_codec')
-
-
-def thrift_compatible_string(token_id):
-    """Converts token to a thrift compatible 64bit string"""
-    # Zipkin passes unsigned values in signed types because Thrift has no
-    # unsigned types, so we have to convert the value.
-    return str(hex(struct.unpack('q', struct.pack('Q', int(token_id, 16)))[0]))
-
-
-def generate_span_id():
-    """
-    Generates a new random span id
-
-    :returns: string representation of zipkin span id
-    """
-    return thrift_compatible_string(generate_random_64bit_string())
+    return codecs.encode(os.urandom(8), 'hex_codec').decode('utf-8')
 
 
 def get_trace_id(request):
@@ -53,14 +36,14 @@ def get_trace_id(request):
     completely random trace id.
 
     :param: current active pyramid request
-    :returns: string representaiton of zipkin trace id
+    :returns: a 64-bit hex string
     """
     if 'X-B3-TraceId' in request.headers:
         return request.headers['X-B3-TraceId']
     elif 'zipkin.trace_id_generator' in request.registry.settings:
         return request.registry.settings['zipkin.trace_id_generator'](request)
     else:
-        return thrift_compatible_string(generate_random_64bit_string())
+        return generate_random_64bit_string()
 
 
 def should_not_sample_path(request):
@@ -147,8 +130,8 @@ def create_zipkin_attr(request):
 
     trace_id = request.zipkin_trace_id
     is_sampled = is_tracing(request)
-    span_id = request.headers.get('X-B3-SpanId', generate_span_id())
-    parent_span_id = request.headers.get('X-B3-ParentSpanId', '0')
+    span_id = request.headers.get('X-B3-SpanId', generate_random_64bit_string())
+    parent_span_id = request.headers.get('X-B3-ParentSpanId', '0000000000000000')
     flags = request.headers.get('X-B3-Flags', '0')
     return ZipkinAttrs(trace_id=trace_id, span_id=span_id,
                        parent_span_id=parent_span_id,

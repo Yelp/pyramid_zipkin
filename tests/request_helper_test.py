@@ -5,15 +5,8 @@ from pyramid_zipkin import request_helper
 
 @mock.patch('pyramid_zipkin.request_helper.codecs.encode', autospec=True)
 def test_generate_random_64bit_string(rand):
-    rand.return_value = '42'
-    assert request_helper.generate_random_64bit_string() == '42'
-
-
-@mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string',
-            autospec=True)
-def test_generate_span_id(rand):
-    rand.return_value = '42'
-    assert request_helper.generate_span_id() == '0x42'
+    rand.return_value = b'17133d482ba4f605'
+    assert request_helper.generate_random_64bit_string() == '17133d482ba4f605'
 
 
 def test_should_not_sample_path_returns_true_if_path_is_blacklisted(request):
@@ -98,21 +91,25 @@ def test_is_tracing_returns_what_tracing_percent_method_returns_for_rest(
 
 
 def test_get_trace_id_returns_header_value_if_present(request):
-    request.headers = {'X-B3-TraceId': 'foo'}
-    request.registry.setttings = {'zipkin.trace_id_generator': lambda r: 'foo'}
-    assert 'foo' == request_helper.get_trace_id(request)
+    request.headers = {'X-B3-TraceId': '17133d482ba4f605'}
+    request.registry.settings = {
+        'zipkin.trace_id_generator': lambda r: '17133d482ba4f605',
+    }
+    assert '17133d482ba4f605' == request_helper.get_trace_id(request)
 
 
 def test_get_trace_id_runs_custom_trace_id_generator_if_present(request):
-    request.registry.settings = {'zipkin.trace_id_generator': lambda r: 'foo'}
-    assert 'foo' == request_helper.get_trace_id(request)
+    request.registry.settings = {
+        'zipkin.trace_id_generator': lambda r: '27133d482ba4f605',
+    }
+    assert '27133d482ba4f605' == request_helper.get_trace_id(request)
 
 
-@mock.patch('pyramid_zipkin.request_helper.thrift_compatible_string',
+@mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string',
             autospec=True)
 def test_get_trace_id_returns_some_random_id_by_default(compat, request):
-    compat.return_value = 'foo'
-    assert 'foo' == request_helper.get_trace_id(request)
+    compat.return_value = '37133d482ba4f605'
+    assert '37133d482ba4f605' == request_helper.get_trace_id(request)
 
 
 @mock.patch('pyramid_zipkin.request_helper.is_tracing', autospec=True)

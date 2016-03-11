@@ -10,7 +10,7 @@ from __future__ import absolute_import
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.thread_local import get_zipkin_attrs
 from pyramid_zipkin.thrift_helper import create_endpoint
-from pyramid_zipkin.thrift_helper import generate_span_id
+from pyramid_zipkin.request_helper import generate_random_64bit_string
 from pyramid_zipkin.logging_helper import get_binary_annotations
 from pyramid_zipkin.logging_helper import ZipkinLoggerHandler
 from pyramid_zipkin.logging_helper import ZipkinLoggingContext
@@ -69,7 +69,7 @@ def create_headers_for_new_span():
 
     return {
         'X-B3-TraceId': zipkin_attrs.trace_id,
-        'X-B3-SpanId': generate_span_id(),
+        'X-B3-SpanId': generate_random_64bit_string(),
         'X-B3-ParentSpanId': zipkin_attrs.span_id,
         'X-B3-Flags': '0',
         'X-B3-Sampled': '1' if zipkin_attrs.is_sampled else '0',

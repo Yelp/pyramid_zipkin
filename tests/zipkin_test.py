@@ -39,16 +39,16 @@ def test_create_headers_for_new_span_empty_if_no_active_request(get_mock):
 
 
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-@mock.patch('pyramid_zipkin.zipkin.generate_span_id', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 def test_create_headers_for_new_span_returns_header_if_active_request(
         gen_mock, get_mock):
     get_mock.return_value = mock.Mock(
-        trace_id='1', span_id='3', is_sampled=True)
-    gen_mock.return_value = '2'
+        trace_id='27133d482ba4f605', span_id='37133d482ba4f605', is_sampled=True)
+    gen_mock.return_value = '17133d482ba4f605'
     expected = {
-        'X-B3-TraceId': '1',
-        'X-B3-SpanId': '2',
-        'X-B3-ParentSpanId': '3',
+        'X-B3-TraceId': '27133d482ba4f605',
+        'X-B3-SpanId': '17133d482ba4f605',
+        'X-B3-ParentSpanId': '37133d482ba4f605',
         'X-B3-Flags': '0',
         'X-B3-Sampled': '1',
         }

@@ -1,3 +1,7 @@
+0.8.2 (2016-03-10)
+------------------
+- Fixed bug where headers were not 64-bit hex strings.
+
 0.8.1 (2016-03-02)
 ------------------
 - Spans without a span ID will generate a new span ID by default.
