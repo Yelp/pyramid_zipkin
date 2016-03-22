@@ -7,8 +7,6 @@ import thriftpy
 from thriftpy.transport import TMemoryBuffer
 from thriftpy.protocol.binary import TBinaryProtocol
 
-from pyramid_zipkin.request_helper import generate_span_id
-
 
 thrift_filepath = os.path.join(os.path.dirname(__file__),
                                'thrift/zipkinCore.thrift')
@@ -115,23 +113,19 @@ def binary_annotation_list_builder(binary_annotations, host):
         for key, value in binary_annotations.items()]
 
 
-def create_span(zipkin_attrs, span_name, annotations, binary_annotations,
-                is_client=False):
+def create_span(
+    span_id,
+    parent_span_id,
+    trace_id,
+    span_name,
+    annotations,
+    binary_annotations,
+):
+    """Takes a bunch of span attributes and returns a thriftpy representation
+    of the span.
     """
-    Creates a zipkin span object based on a request
-
-    :param request: pyramid request object
-    :param annotations: list of zipkin annotation objects
-    :param binary_annotations: list of zipkin binary annotation objects
-    :returns: zipkin span object
-    """
-
-    span_id = generate_span_id() if is_client else zipkin_attrs.span_id
-    parent_span_id = (
-        zipkin_attrs.span_id if is_client else zipkin_attrs.parent_span_id)
-
     return zipkin_core.Span(**{
-        "trace_id": get_id(zipkin_attrs.trace_id),
+        "trace_id": get_id(trace_id),
         "name": span_name,
         "id": get_id(span_id),
         "parent_id": get_id(parent_span_id),

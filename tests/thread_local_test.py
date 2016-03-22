@@ -2,6 +2,9 @@ import mock
 
 from pyramid_zipkin import thread_local
 
+# Can't patch an attribute that doesn't yet exist
+thread_local._thread_local.requests = []
+
 
 @mock.patch('pyramid_zipkin.thread_local._thread_local.requests', ['foo'])
 def test_get_thread_local_requests_returns_back_request_if_present():

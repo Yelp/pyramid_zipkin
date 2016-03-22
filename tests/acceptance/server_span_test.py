@@ -114,35 +114,27 @@ def test_blacklisted_path_has_no_span(thrift_obj, sampled_trace_id_generator):
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_server_extra_annotations_are_logged(thrift_obj,
-                                             sampled_trace_id_generator):
+def test_server_extra_annotations_are_included(
+    thrift_obj,
+    sampled_trace_id_generator
+):
     settings = {
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
-    def validate_span_foo(span_obj):
-        result_span = test_helper.massage_result_span(span_obj)
-        assert (1, 0) == (result_span['id'], result_span['parent_id'])
-        ann = result_span['annotations'][0]
-        assert ('foo', 2000000) == (ann['value'], ann['timestamp'])
-        b_ann = result_span['binary_annotations'][0]
-        assert ('ping', 'pong') == (b_ann['key'], b_ann['value'])
-
-    def validate_span_bar(span_obj):
-        result_span = test_helper.massage_result_span(span_obj)
-        assert (1, 0) == (result_span['id'], result_span['parent_id'])
-        ann = result_span['annotations'][0]
-        assert ('bar', 1000000) == (ann['value'], ann['timestamp'])
-        b_ann = result_span['binary_annotations'][0]
-        assert ('ping', 'pong') == (b_ann['key'], b_ann['value'])
-
-    thrift_obj.side_effect = [lambda _: None,  # first span is sr, ss - ignore
-                              validate_span_foo,
-                              validate_span_bar]
-
     TestApp(main({}, **settings)).get('/sample_v2', status=200)
 
-    assert thrift_obj.call_count == 3
+    assert thrift_obj.call_count == 1
+    server_span = thrift_obj.call_args[0][0]
+    # Assert that the annotations logged via debug statements exist
+    test_helper.assert_extra_annotations(
+        server_span,
+        {'bar': 1000000, 'foo': 2000000},
+    )
+    test_helper.assert_extra_binary_annotations(
+        server_span,
+        {'ping': 'pong'},
+    )
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)

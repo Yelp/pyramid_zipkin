@@ -18,20 +18,54 @@ def sample(request):
 
 @view_config(route_name='sample_route_v2', renderer='json')
 def sample_v2(request):
-    zipkin_logger.debug(
-        {'annotations': {'foo': 2}, 'binary_annotations': {'ping': 'pong'},
-         'name': 'v2'})
+    zipkin_logger.debug({
+        'annotations': {'foo': 2},
+        'binary_annotations': {'ping': 'pong'},
+        'name': 'v2',
+    })
     zipkin_logger.debug({'annotations': {'bar': 1}, 'name': 'v2'})
     return {}
 
 
 @view_config(route_name='sample_route_v2_client', renderer='json')
 def sample_v2_client(request):
-    zipkin_logger.debug(
-        {'annotations': {'foo_client': 2},
-         'name': 'v2_client', 'type': 'client'})
-    zipkin_logger.debug({'annotations': {'bar_client': 1}, 'name': 'v2_client',
-                         'type': 'client'})
+    zipkin_logger.debug({
+        'annotations': {'foo_client': 2},
+        'name': 'v2_client',
+        'service_name': 'foo_service',
+    })
+    zipkin_logger.debug({
+        'annotations': {'bar_client': 1},
+        'name': 'v2_client',
+        'service_name': 'bar_service',
+    })
+    return {}
+
+
+@view_config(route_name='client_context', renderer='json')
+def client_context(request):
+    # These annotations should go to the server span
+    zipkin_logger.debug({
+        'annotations': {'server_annotation': 1},
+        'binary_annotations': {'server': 'true'},
+    })
+    # Creates a new client span child of the server span
+    with zipkin.ClientSpanContext(
+        service_name='child', span_name='get',
+        binary_annotations={'foo': 'bar'},
+    ):
+        # These annotations go to the child span
+        zipkin_logger.debug({
+            'annotations': {'child_annotation': 1},
+            'binary_annotations': {'child': 'true'},
+        })
+        # This should log a new span with `child` as its parent
+        zipkin_logger.debug({
+            'annotations': {'grandchild_annotation': 1},
+            'binary_annotations': {'grandchild': 'true'},
+            'service_name': 'grandchild',
+            'name': 'put',
+        })
     return {}
 
 
@@ -65,6 +99,7 @@ def main(global_config, **settings):
     config.add_route('sample_route_v2', '/sample_v2')
     config.add_route('sample_route_v2_client', '/sample_v2_client')
     config.add_route('sample_route_child_span', '/sample_child_span')
+    config.add_route('client_context', '/client_context')
 
     config.add_route('server_error', '/server_error')
     config.add_route('client_error', '/client_error')
