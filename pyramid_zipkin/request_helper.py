@@ -3,6 +3,7 @@
 import codecs
 import os
 import re
+import struct
 from collections import namedtuple
 
 import six
@@ -45,6 +46,13 @@ def get_trace_id(request):
     else:
         id = generate_random_64bit_string()
 
+    # Backwards compatibility for <=v0.8.1
+    # If the trace id is a hex value that starts with '0x' or '-0x',
+    # convert to the unsigned form before proceeding.
+    if id.startswith('0x') or id.startswith('-0x'):
+        id = _signed_hex_to_unsigned_hex(id)
+    id = id.zfill(16)
+
     assert _is_hex_string(id) and len(id) == 16
     return id
 
@@ -55,6 +63,10 @@ def _is_hex_string(s):
         return True
     except ValueError:
         return False
+
+
+def _signed_hex_to_unsigned_hex(s):
+    return '{0:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
 
 
 def should_not_sample_path(request):

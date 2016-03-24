@@ -112,6 +112,11 @@ def test_get_trace_id_returns_some_random_id_by_default(compat, request):
     assert '37133d482ba4f605' == request_helper.get_trace_id(request)
 
 
+def test_get_trace_id_works_with_old_style_hex_string(request):
+    request.headers = {'X-B3-TraceId': '-0x3ab5151d76fb85e1'}
+    assert 'c54aeae289047a1f' == request_helper.get_trace_id(request)
+
+
 @mock.patch('pyramid_zipkin.request_helper.is_tracing', autospec=True)
 def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(mock, request):
     mock.return_value = 'bla'
@@ -132,3 +137,10 @@ def test_is_hex_string():
     assert request_helper._is_hex_string('17133d482ba4f605')
     assert request_helper._is_hex_string('0' * 16)
     assert not request_helper._is_hex_string('0123456789abcdefg')
+
+
+def test_signed_hex_to_unsigned_hex():
+    assert (request_helper._signed_hex_to_unsigned_hex('0xd68adf75f4cfd13') ==
+            'd68adf75f4cfd13')
+    assert (request_helper._signed_hex_to_unsigned_hex('-0x3ab5151d76fb85e1') ==
+            'c54aeae289047a1f')

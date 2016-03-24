@@ -1,6 +1,6 @@
-0.8.2 (2016-03-10)
+0.9.0 (2016-03-23)
 ------------------
-- Fixed bug where headers were not 64-bit hex strings.
+- Fixed bug where headers were not 64-bit unsigned hex strings.
 
 0.8.1 (2016-03-02)
 ------------------

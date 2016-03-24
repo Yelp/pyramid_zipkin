@@ -76,11 +76,20 @@ def test_copy_endpoint_with_new_service_name(gethostbyname, request):
     assert endpoint.ipv4 == 0
 
 
-def test_get_id_with_number():
+def test_unsigned_hex_to_signed_int_with_number():
     assert thrift_helper.unsigned_hex_to_signed_int('17133d482ba4f605') == \
         1662740067609015813
     assert thrift_helper.unsigned_hex_to_signed_int('b6dbb1c2b362bf51') == \
         -5270423489115668655
+
+    # Test for backwards compatibility with previous versions of this library
+    # This tests the case where a service is running pyramid_zipkin<=0.8.1 and
+    # receives a signed hex string parent_span_id that has the format
+    # '0xDEADBEEF' or '-0xDEADBEEF'
+    assert thrift_helper.unsigned_hex_to_signed_int('0x4f18a03ad0031fe9') == \
+        5699481502895775721
+    assert thrift_helper.unsigned_hex_to_signed_int('-0x4f18a03ad0031fe9') == \
+        -5699481502895775721
 
 
 def test_create_annotation():
