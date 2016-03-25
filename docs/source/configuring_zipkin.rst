@@ -105,8 +105,8 @@ fine tune as per your use case.
 5. zipkin.trace_id_generator
 ----------------------------
     A method definition to generate a `trace_id` for the request. The trace_id is
-    expected to be a 64-bit hex string By default, it creates a random trace id
-    otherwise.
+    expected to be a 64-bit hex string (e.g. '17133d482ba4f605'). By default, it
+    creates a random trace id.
 
     The method MUST take `request` as a parameter (so that you can make trace
     id deterministic).
