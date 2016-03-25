@@ -158,6 +158,13 @@ def unsigned_hex_to_signed_int(hex_string):
 
     This is due to the fact that Apache Thrift only has signed values.
 
+    Examples:
+        '17133d482ba4f605' => 1662740067609015813
+        'b6dbb1c2b362bf51' => -5270423489115668655
+    Examples for backwards compatibility with signed hex strings:
+        '0x4f18a03ad0031fe9' => 5699481502895775721
+        '-0x4f18a03ad0031fe9' => -5699481502895775721
+
     :param hex_string: the string representation of a zipkin ID
     :returns: signed int representation
     """

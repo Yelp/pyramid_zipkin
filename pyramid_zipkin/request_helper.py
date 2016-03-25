@@ -65,6 +65,13 @@ def _is_hex_string(s):
 
 
 def _signed_hex_to_unsigned_hex(s):
+    """Takes a signed hex string that begins with '0x' and converts it to
+    a 16-character string representing an unsigned hex value.
+
+    Examples:
+        '0xd68adf75f4cfd13' => 'd68adf75f4cfd13'
+        '-0x3ab5151d76fb85e1' => 'c54aeae289047a1f'
+    """
     return '{0:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
 
 
