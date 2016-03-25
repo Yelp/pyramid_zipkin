@@ -43,14 +43,15 @@ def test_headers_created_for_sampled_child_span(sampled_trace_id_generator):
 
     expected = {
         'X-B3-Flags': '0',
-        'X-B3-ParentSpanId': '0x1234',
+        'X-B3-ParentSpanId': '17133d482ba4f605',
         'X-B3-Sampled': '1',
-        'X-B3-TraceId': '0x0',
-        }
+        'X-B3-TraceId': '0' * 16,
+    }
 
-    with mock.patch('pyramid_zipkin.request_helper.generate_span_id') \
-            as mock_generate_span_id:
-        mock_generate_span_id.return_value = '0x1234'
+    with mock.patch(
+        'pyramid_zipkin.request_helper.generate_random_64bit_string'
+    ) as mock_generate_random_64bit_string:
+        mock_generate_random_64bit_string.return_value = '17133d482ba4f605'
         headers = TestApp(main({}, **settings)).get('/sample_child_span',
                                                     status=200)
     headers_json = headers.json

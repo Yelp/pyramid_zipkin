@@ -6,7 +6,7 @@ from webtest import TestApp
 
 from .app import main
 from tests.acceptance import test_helper
-from pyramid_zipkin.thrift_helper import get_id
+from pyramid_zipkin.thrift_helper import unsigned_hex_to_signed_int
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
@@ -22,16 +22,19 @@ def test_sample_server_span_with_100_percent_tracing(
     def validate_span(span_obj):
         result_span = test_helper.massage_result_span(span_obj)
         timestamps = test_helper.get_timestamps(result_span)
-        get_span['trace_id'] = get_id(default_trace_id_generator(span_obj))
+        get_span['trace_id'] = unsigned_hex_to_signed_int(
+            default_trace_id_generator(span_obj),
+        )
         assert get_span == result_span
         assert old_time <= timestamps['sr']
         assert timestamps['sr'] <= timestamps['ss']
 
     thrift_obj.side_effect = validate_span
 
-    with mock.patch('pyramid_zipkin.request_helper.generate_span_id') \
-            as mock_generate_span_id:
-        mock_generate_span_id.return_value = '0x1'
+    with mock.patch(
+        'pyramid_zipkin.request_helper.generate_random_64bit_string'
+    ) as mock_generate_random_64bit_string:
+        mock_generate_random_64bit_string.return_value = '1'
         TestApp(main({}, **settings)).get('/sample', status=200)
 
     assert thrift_obj.call_count == 1
