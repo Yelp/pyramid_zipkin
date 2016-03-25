@@ -40,21 +40,20 @@ def get_trace_id(request):
     :returns: a 64-bit hex string
     """
     if 'X-B3-TraceId' in request.headers:
-        id = request.headers['X-B3-TraceId']
+        trace_id = request.headers['X-B3-TraceId']
     elif 'zipkin.trace_id_generator' in request.registry.settings:
-        id = request.registry.settings['zipkin.trace_id_generator'](request)
+        trace_id = request.registry.settings['zipkin.trace_id_generator'](request)
     else:
-        id = generate_random_64bit_string()
+        trace_id = generate_random_64bit_string()
 
     # Backwards compatibility for <=v0.8.1
     # If the trace id is a hex value that starts with '0x' or '-0x',
     # convert to the unsigned form before proceeding.
-    if id.startswith('0x') or id.startswith('-0x'):
-        id = _signed_hex_to_unsigned_hex(id)
-    id = id.zfill(16)
+    if trace_id.startswith('0x') or trace_id.startswith('-0x'):
+        trace_id = _signed_hex_to_unsigned_hex(trace_id)
+    trace_id = trace_id.zfill(16)
 
-    assert _is_hex_string(id) and len(id) == 16
-    return id
+    return trace_id
 
 
 def _is_hex_string(s):
