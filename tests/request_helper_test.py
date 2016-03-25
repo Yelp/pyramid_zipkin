@@ -133,12 +133,6 @@ def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(mock, request):
     assert zipkin_attr == request_helper.create_zipkin_attr(request)
 
 
-def test_is_hex_string():
-    assert request_helper._is_hex_string('17133d482ba4f605')
-    assert request_helper._is_hex_string('0' * 16)
-    assert not request_helper._is_hex_string('0123456789abcdefg')
-
-
 def test_signed_hex_to_unsigned_hex():
     assert (request_helper._signed_hex_to_unsigned_hex('0xd68adf75f4cfd13') ==
             'd68adf75f4cfd13')

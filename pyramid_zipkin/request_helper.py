@@ -56,14 +56,6 @@ def get_trace_id(request):
     return trace_id
 
 
-def _is_hex_string(s):
-    try:
-        int(s, 16)
-        return True
-    except ValueError:
-        return False
-
-
 def _signed_hex_to_unsigned_hex(s):
     """Takes a signed hex string that begins with '0x' and converts it to
     a 16-character string representing an unsigned hex value.
