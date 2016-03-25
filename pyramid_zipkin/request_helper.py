@@ -27,7 +27,7 @@ class ZipkinAttrs(namedtuple(
 
 
 def generate_random_64bit_string():
-    """Returns a 64 bit ascii encoded string"""
+    """Returns a 64 bit UTF-8 encoded string"""
     return codecs.encode(os.urandom(8), 'hex_codec').decode('utf-8')
 
 
