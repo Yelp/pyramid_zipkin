@@ -59,5 +59,5 @@ def get_span(annotation, uri_binary_annotation, uri_qs_binary_annotation):
                                   key=lambda ann: ann['value']),
             'binary_annotations': [uri_binary_annotation,
                                    uri_qs_binary_annotation],
-            'name': 'GET',
+            'name': 'GET /sample',
             }
