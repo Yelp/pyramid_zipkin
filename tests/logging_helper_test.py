@@ -52,10 +52,10 @@ def test_zipkin_logging_context_log_spans(
     # This lengthy function tests that the logging context properly
     # logs both client and server spans, while attaching extra annotations
     # logged throughout the context of the trace.
-    trace_id = '0xf'
-    parent_span_id = '0x1'
-    server_span_id = '0x2'
-    client_span_id = '0x3'
+    trace_id = '000000000000000f'
+    parent_span_id = '0000000000000001'
+    server_span_id = '0000000000000002'
+    client_span_id = '0000000000000003'
     client_span_name = 'breadcrumbs'
     client_svc_name = 'svc'
     attr = ZipkinAttrs(
@@ -189,9 +189,9 @@ def test_log_span(thrift_obj):
     thrift_obj.return_value = 'obj'
     registry = {'zipkin.transport_handler': (lambda x, y: (x, y))}
     stream, span_bytes = logging_helper.log_span(
-        span_id='0x2',
-        parent_span_id='0x1',
-        trace_id='0xf',
+        span_id='0000000000000002',
+        parent_span_id='0000000000000001',
+        trace_id='000000000000000f',
         span_name='span',
         annotations='ann',
         binary_annotations='binary_ann',
@@ -210,7 +210,8 @@ def test_log_span_calls_transport_handler_with_correct_params(thrift_obj,
     registry = {'zipkin.transport_handler': transport_handler,
                 'zipkin.stream_name': 'foo'}
     logging_helper.log_span(
-        '0x2', '0x1', '0x15', 'span', 'ann', 'binary_ann', registry
+        '0000000000000002', '0000000000000001', '00000000000000015',
+        'span', 'ann', 'binary_ann', registry
     )
     transport_handler.assert_called_once_with('foo', thrift_obj.return_value)
 
@@ -221,7 +222,8 @@ def test_log_span_uses_default_stream_name_if_not_provided(thrift_obj, create_sp
     transport_handler = mock.Mock()
     registry = {'zipkin.transport_handler': transport_handler}
     logging_helper.log_span(
-        '0x2', '0x1', '0x15', 'span', 'ann', 'binary_ann', registry
+        '0000000000000002', '0000000000000001', '00000000000000015',
+        'span', 'ann', 'binary_ann', registry
     )
     transport_handler.assert_called_once_with('zipkin', thrift_obj.return_value)
 
@@ -231,7 +233,8 @@ def test_log_span_uses_default_stream_name_if_not_provided(thrift_obj, create_sp
 def test_log_span_raises_error_if_handler_not_defined(thrift_obj, create_sp):
     with pytest.raises(ZipkinError) as excinfo:
         logging_helper.log_span(
-            '0x2', '0x1', '0x15', 'span', 'ann', 'binary_ann', {}
+            '0000000000000002', '0000000000000001', '00000000000000015',
+            'span', 'ann', 'binary_ann', {}
         )
     assert ("`zipkin.transport_handler` is a required config property" in str(
         excinfo.value))
