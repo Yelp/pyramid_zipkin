@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 
 from pyramid_zipkin.exception import ZipkinError
-from pyramid_zipkin.request_helper import generate_span_id
+from pyramid_zipkin.request_helper import generate_random_64bit_string
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import annotation_list_builder
@@ -90,7 +90,7 @@ class ZipkinLoggingContext(object):
                     self.zipkin_attrs.span_id
                 )
                 # A new client span's span ID can be overridden
-                span_id = span['span_id'] or generate_span_id()
+                span_id = span['span_id'] or generate_random_64bit_string()
                 endpoint = copy_endpoint_with_new_service_name(
                     self.thrift_endpoint, span['service_name']
                 )

@@ -59,9 +59,9 @@ def test_create_headers_for_new_span_returns_header_if_active_request(
 
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-@mock.patch('pyramid_zipkin.zipkin.generate_span_id', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 def test_client_span_context_no_zipkin_attrs(
-    generate_span_id_mock,
+    generate_string_mock,
     get_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
 ):
@@ -70,15 +70,15 @@ def test_client_span_context_no_zipkin_attrs(
     context = zipkin.ClientSpanContext('svc', 'span')
     with context:
         pass
-    assert not generate_span_id_mock.called
+    assert not generate_string_mock.called
     assert not pop_zipkin_attrs_mock.called
 
 
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-@mock.patch('pyramid_zipkin.zipkin.generate_span_id', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 def test_client_span_context_not_sampled(
-    generate_span_id_mock,
+    generate_string_mock,
     get_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
 ):
@@ -88,16 +88,16 @@ def test_client_span_context_not_sampled(
     context = zipkin.ClientSpanContext('svc', 'span')
     with context:
         pass
-    assert not generate_span_id_mock.called
+    assert not generate_string_mock.called
     assert not pop_zipkin_attrs_mock.called
 
 
 @mock.patch('pyramid_zipkin.thread_local._thread_local', autospec=True)
-@mock.patch('pyramid_zipkin.zipkin.generate_span_id', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.zipkin_logger', autospec=True)
 def test_client_span_context(
     zipkin_logger_mock,
-    generate_span_id_mock,
+    generate_string_mock,
     thread_local_mock,
 ):
     zipkin_attrs = ZipkinAttrs(
@@ -108,7 +108,7 @@ def test_client_span_context(
     assert logging_handler.client_spans == []
 
     zipkin_logger_mock.handlers = [logging_handler]
-    generate_span_id_mock.return_value = '1'
+    generate_string_mock.return_value = '1'
 
     context = zipkin.ClientSpanContext(
         service_name='svc',
