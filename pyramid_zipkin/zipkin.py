@@ -9,17 +9,17 @@ from __future__ import absolute_import
 
 import time
 
+from pyramid_zipkin.logging_helper import get_binary_annotations
+from pyramid_zipkin.logging_helper import zipkin_logger
+from pyramid_zipkin.logging_helper import ZipkinLoggerHandler
+from pyramid_zipkin.logging_helper import ZipkinLoggingContext
 from pyramid_zipkin.request_helper import create_zipkin_attr
-from pyramid_zipkin.request_helper import generate_span_id
+from pyramid_zipkin.request_helper import generate_random_64bit_string
 from pyramid_zipkin.request_helper import ZipkinAttrs
 from pyramid_zipkin.thread_local import get_zipkin_attrs
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import create_endpoint
-from pyramid_zipkin.logging_helper import get_binary_annotations
-from pyramid_zipkin.logging_helper import zipkin_logger
-from pyramid_zipkin.logging_helper import ZipkinLoggerHandler
-from pyramid_zipkin.logging_helper import ZipkinLoggingContext
 
 
 class ClientSpanContext(object):
@@ -58,7 +58,7 @@ class ClientSpanContext(object):
             return self
 
         self.start_timestamp = time.time()
-        self.span_id = generate_span_id()
+        self.span_id = generate_random_64bit_string()
         # Put span ID on logging handler. Assume there's only a single handler
         # on the logger, since all logging should be set up in this package.
         self.handler = zipkin_logger.handlers[0]
@@ -154,7 +154,7 @@ def create_headers_for_new_span():
 
     return {
         'X-B3-TraceId': zipkin_attrs.trace_id,
-        'X-B3-SpanId': generate_span_id(),
+        'X-B3-SpanId': generate_random_64bit_string(),
         'X-B3-ParentSpanId': zipkin_attrs.span_id,
         'X-B3-Flags': '0',
         'X-B3-Sampled': '1' if zipkin_attrs.is_sampled else '0',

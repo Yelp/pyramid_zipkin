@@ -3,12 +3,12 @@ import pytest
 
 @pytest.fixture
 def default_trace_id_generator(request):
-    return lambda request: '0x42'
+    return lambda request: '17133d482ba4f605'
 
 
 @pytest.fixture
 def sampled_trace_id_generator(request):
-    return lambda request: '0x0'
+    return lambda request: '0' * 16
 
 
 @pytest.fixture

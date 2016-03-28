@@ -27,24 +27,8 @@ class ZipkinAttrs(namedtuple(
 
 
 def generate_random_64bit_string():
-    """Returns a 64 bit ascii encoded string"""
-    return codecs.encode(os.urandom(8), 'hex_codec')
-
-
-def thrift_compatible_string(token_id):
-    """Converts token to a thrift compatible 64bit string"""
-    # Zipkin passes unsigned values in signed types because Thrift has no
-    # unsigned types, so we have to convert the value.
-    return str(hex(struct.unpack('q', struct.pack('Q', int(token_id, 16)))[0]))
-
-
-def generate_span_id():
-    """
-    Generates a new random span id
-
-    :returns: string representation of zipkin span id
-    """
-    return thrift_compatible_string(generate_random_64bit_string())
+    """Returns a 64 bit UTF-8 encoded string"""
+    return codecs.encode(os.urandom(8), 'hex_codec').decode('utf-8')
 
 
 def get_trace_id(request):
@@ -53,14 +37,34 @@ def get_trace_id(request):
     completely random trace id.
 
     :param: current active pyramid request
-    :returns: string representaiton of zipkin trace id
+    :returns: a 64-bit hex string
     """
     if 'X-B3-TraceId' in request.headers:
-        return request.headers['X-B3-TraceId']
+        trace_id = request.headers['X-B3-TraceId']
     elif 'zipkin.trace_id_generator' in request.registry.settings:
-        return request.registry.settings['zipkin.trace_id_generator'](request)
+        trace_id = request.registry.settings['zipkin.trace_id_generator'](request)
     else:
-        return thrift_compatible_string(generate_random_64bit_string())
+        trace_id = generate_random_64bit_string()
+
+    # Backwards compatibility for <=v0.8.1
+    # If the trace id is a hex value that starts with '0x' or '-0x',
+    # convert to the unsigned form before proceeding.
+    if trace_id.startswith('0x') or trace_id.startswith('-0x'):
+        trace_id = _signed_hex_to_unsigned_hex(trace_id)
+    trace_id = trace_id.zfill(16)
+
+    return trace_id
+
+
+def _signed_hex_to_unsigned_hex(s):
+    """Takes a signed hex string that begins with '0x' and converts it to
+    a 16-character string representing an unsigned hex value.
+
+    Examples:
+        '0xd68adf75f4cfd13' => 'd68adf75f4cfd13'
+        '-0x3ab5151d76fb85e1' => 'c54aeae289047a1f'
+    """
+    return '{0:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
 
 
 def should_not_sample_path(request):
@@ -147,9 +151,13 @@ def create_zipkin_attr(request):
 
     trace_id = request.zipkin_trace_id
     is_sampled = is_tracing(request)
-    span_id = request.headers.get('X-B3-SpanId', generate_span_id())
-    parent_span_id = request.headers.get('X-B3-ParentSpanId', '0')
+    span_id = request.headers.get('X-B3-SpanId', generate_random_64bit_string())
+    parent_span_id = request.headers.get('X-B3-ParentSpanId', '0' * 16)
     flags = request.headers.get('X-B3-Flags', '0')
-    return ZipkinAttrs(trace_id=trace_id, span_id=span_id,
-                       parent_span_id=parent_span_id,
-                       flags=flags, is_sampled=is_sampled)
+    return ZipkinAttrs(
+        trace_id=trace_id,
+        span_id=span_id,
+        parent_span_id=parent_span_id,
+        flags=flags,
+        is_sampled=is_sampled,
+    )

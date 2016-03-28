@@ -33,22 +33,22 @@ def test_log_new_client_spans(
     assert_extra_annotations(bar_span, {'bar_client': 1000000})
 
 
-@mock.patch('pyramid_zipkin.request_helper.generate_span_id')
+@mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string')
 def test_headers_created_for_sampled_child_span(
-    mock_generate_span_id,
+    mock_generate_string,
     sampled_trace_id_generator
 ):
     # Simple smoke test for create_headers_for_new_span
-    mock_generate_span_id.return_value = '0x1234'
+    mock_generate_string.return_value = '17133d482ba4f605'
     settings = {
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
     expected = {
         'X-B3-Flags': '0',
-        'X-B3-ParentSpanId': '0x1234',
+        'X-B3-ParentSpanId': '17133d482ba4f605',
         'X-B3-Sampled': '1',
-        'X-B3-TraceId': '0x0',
+        'X-B3-TraceId': '0' * 16,
     }
 
     headers = TestApp(main({}, **settings)).get('/sample_child_span',
