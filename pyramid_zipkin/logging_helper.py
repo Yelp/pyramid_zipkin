@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-
 import logging
 import time
+from collections import defaultdict
 
 from pyramid_zipkin.exception import ZipkinError
+from pyramid_zipkin.request_helper import generate_random_64bit_string
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import annotation_list_builder
@@ -69,86 +70,156 @@ class ZipkinLoggingContext(object):
         a success. It also logs the service `ss` and `sr` annotations.
         """
         if self.zipkin_attrs.is_sampled and self.is_response_success():
-            for span in self.handler.spans:
-                # If a logged client span overrode the 'service_name' attr,
-                # swap that out.
-                if span['service_name'] is None:
-                    endpoint = self.thrift_endpoint
-                else:
-                    endpoint = copy_endpoint_with_new_service_name(
-                        self.thrift_endpoint, span['service_name']
-                    )
-                annotations = annotation_list_builder(
-                    span['annotations'], endpoint)
-                binary_annotations = binary_annotation_list_builder(
-                    span['binary_annotations'], endpoint)
-                log_span(self.zipkin_attrs, span['span_name'],
-                         self.registry_settings, annotations,
-                         binary_annotations, span['is_client'])
+            # Collect additional annotations from the logging handler
+            annotations_by_span_id = defaultdict(dict)
+            binary_annotations_by_span_id = defaultdict(dict)
+            for msg in self.handler.extra_annotations:
+                span_id = msg['parent_span_id'] or self.zipkin_attrs.span_id
+                # This should check if these are non-None
+                annotations_by_span_id[span_id].update(msg['annotations'])
+                binary_annotations_by_span_id[span_id].update(
+                    msg['binary_annotations']
+                )
 
-            end_timestamp = time.time()
-            log_service_span(self.zipkin_attrs, self.start_timestamp,
-                             end_timestamp, self.binary_annotations_dict,
-                             self.thrift_endpoint, self.request_method,
-                             self.registry_settings)
+            # Collect, annotate, and log client spans from the logging handler
+            for span in self.handler.client_spans:
+                # The parent_span_id is either the parent ID set in the
+                # logging handler or the current Zipkin context's span ID.
+                parent_span_id = (
+                    span['parent_span_id'] or
+                    self.zipkin_attrs.span_id
+                )
+                # A new client span's span ID can be overridden
+                span_id = span['span_id'] or generate_random_64bit_string()
+                endpoint = copy_endpoint_with_new_service_name(
+                    self.thrift_endpoint, span['service_name']
+                )
+                # Collect annotations both logged with the new spans and
+                # logged in separate log messages.
+                annotations = span['annotations']
+                annotations.update(annotations_by_span_id[span_id])
+                binary_annotations = span['binary_annotations']
+                binary_annotations.update(binary_annotations_by_span_id[span_id])
+                # Create serializable thrift objects of annotations
+                thrift_annotations = annotation_list_builder(
+                    annotations, endpoint
+                )
+                thrift_binary_annotations = binary_annotation_list_builder(
+                    binary_annotations, endpoint
+                )
+
+                log_span(
+                    span_id=span_id,
+                    parent_span_id=parent_span_id,
+                    trace_id=self.zipkin_attrs.trace_id,
+                    span_name=span['span_name'],
+                    annotations=thrift_annotations,
+                    binary_annotations=thrift_binary_annotations,
+                    registry_settings=self.registry_settings,
+                )
+
+            # Collect extra annotations for server span, then log it.
+            extra_annotations = annotations_by_span_id[self.zipkin_attrs.span_id]
+            extra_binary_annotations = binary_annotations_by_span_id[
+                self.zipkin_attrs.span_id
+            ]
+            annotations = dict(
+                sr=self.start_timestamp,
+                ss=time.time(),
+                **extra_annotations
+            )
+            thrift_annotations = annotation_list_builder(
+                annotations,
+                self.thrift_endpoint,
+            )
+
+            # Binary annotations can be set through debug messages or the
+            # set_extra_binary_annotations registry setting.
+            self.binary_annotations_dict.update(extra_binary_annotations)
+            thrift_binary_annotations = binary_annotation_list_builder(
+                self.binary_annotations_dict,
+                self.thrift_endpoint,
+            )
+
+            log_span(
+                span_id=self.zipkin_attrs.span_id,
+                parent_span_id=self.zipkin_attrs.parent_span_id,
+                trace_id=self.zipkin_attrs.trace_id,
+                span_name=self.request_method,
+                annotations=thrift_annotations,
+                binary_annotations=thrift_binary_annotations,
+                registry_settings=self.registry_settings,
+            )
 
 
 class ZipkinLoggerHandler(logging.StreamHandler, object):
-    """Logger Handler to log span annotations to scribe.
-    To connect to the handler, logger name must be 'pyramid_zipkin.logger'
+    """Logger Handler to log span annotations or additional client spans to
+    scribe. To connect to the handler, logger name must be
+    'pyramid_zipkin.logger'.
 
-    :param zipkin_attrs: tuple containing trace_id, span_id & is_sampled
+    :param zipkin_attrs: ZipkinAttrs namedtuple object
     """
 
     def __init__(self, zipkin_attrs):
         super(ZipkinLoggerHandler, self).__init__()
+        # If parent_span_id is set, the application is in a logging context
+        # where each additional client span logged has this span as its parent.
+        # This is to allow logging of hierarchies of spans instead of just
+        # single client spans. See the ClientSpanContext class.
+        self.parent_span_id = None
         self.zipkin_attrs = zipkin_attrs
-        self.spans = []
+        self.client_spans = []
+        self.extra_annotations = []
 
-    def store_span(
-        self, span_name, is_client,
-        annotations, binary_annotations,
-        service_name,
+    def store_client_span(
+        self, span_name, service_name,
+        annotations, binary_annotations, span_id=None,
     ):
-        """Store the annotations into the list and send them later.
-
-        :param span_name: string name of the span to be used.
-        :param is_client: boolean to decide whether it is a client/server span
-        :param annotations: dict of annotations logged.
-        :param binary_annotations: dict of binary annotations logged.
-        :param service_name: str of overridden service name, or None if
-            service_name from main context is not to be overridden.
+        """Just a way of exposing how to store new client spans on this
+        logging handler.
         """
-        self.spans.append({
+        self.client_spans.append({
+            'span_name': span_name,
+            'service_name': service_name,
+            'parent_span_id': self.parent_span_id,
+            'span_id': span_id,
             'annotations': annotations,
             'binary_annotations': binary_annotations,
-            'span_name': span_name,
-            'is_client': is_client,
-            'service_name': service_name,
         })
 
     def emit(self, record):
-        """Handle each record message.
+        """Handle each record message. This function is called whenever
+        zipkin_logger.debug() is called.
 
         :param record: object containing the `msg` object.
-                       Structure of record.msg should be the following:
-                       ::
+            Structure of record.msg should be the following:
+            ::
 
-                           {
-                               "annotations": {
-                                        "cs": ts1,
-                                        "cr": ts2,
-                                        },
-                               "binary_annotations": {
-                                        "http.uri": "/foo/bar",
-                                        },
-                                "name": "foo_span",
-                                "type": "client/service",
-                            }
+            {
+                "annotations": {
+                    "cs": ts1,
+                    "cr": ts2,
+                },
+                "binary_annotations": {
+                    "http.uri": "/foo/bar",
+                },
+                "name": "foo_span",
+                "service_name": "myService",
+            }
 
-                        "type" if not included is considered a 'service' span;
-                        i.e. annotations are added in the current span instead
-                        of creating a new one (which is the case for 'client').
+            Keys:
+            - annotations: str -> timestamp annotations
+            - binary_annotations: str -> str binary annotations
+              (One of either annotations or binary_annotations is required)
+            - name: str of new span name; only used if service-name is also
+              specified.
+            - service_name: str of new client span's service name.
+
+            If service_name is specified, this log msg is considered to
+            represent a new client span. If service_name is omitted, this is
+            considered additional annotation for the currently active
+            "parent span" (either the server span or the parent client span
+            inside a ClientSpanContext).
         """
         if not self.zipkin_attrs.is_sampled:
             return
@@ -156,16 +227,25 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
         annotations = record.msg.get('annotations', {})
         binary_annotations = record.msg.get('binary_annotations', {})
         if not annotations and not binary_annotations:
-            raise ZipkinError("Atleast one of annotation/binary annotation has"
-                              " to be provided for {0} span".format(span_name))
-        is_client = record.msg.get('type', 'service') == 'client'
-        # Client spans can override 'service_name' for trace readability
+            raise ZipkinError(
+                "Atleast one of annotation/binary annotation has"
+                " to be provided for {0} span".format(span_name)
+            )
         service_name = record.msg.get('service_name', None)
-        self.store_span(
-            span_name, is_client,
-            annotations, binary_annotations,
-            service_name,
-        )
+        # Presence of service_name means new client span.
+        if service_name is not None:
+            self.store_client_span(
+                span_name=span_name,
+                service_name=service_name,
+                annotations=annotations,
+                binary_annotations=binary_annotations,
+            )
+        else:
+            self.extra_annotations.append({
+                'annotations': annotations,
+                'binary_annotations': binary_annotations,
+                'parent_span_id': self.parent_span_id,
+            })
 
 
 def get_binary_annotations(request, response):
@@ -183,15 +263,18 @@ def get_binary_annotations(request, response):
     return annotations
 
 
-def log_span(zipkin_attrs, span_name, registry_settings, annotations,
-             binary_annotations, is_client):
-    """Creates a span and logs it.
-
-    If `zipkin.transport_handler` config is set, it is used to act as a callback
-    and log message is sent as a parameter.
+def log_span(
+    span_id, parent_span_id, trace_id, span_name,
+    annotations, binary_annotations,
+    registry_settings,
+):
+    """Creates a span and logs it. Uses the required registry setting of
+    `zipkin.transport_handler` to log the span.
     """
     span = create_span(
-        zipkin_attrs, span_name, annotations, binary_annotations, is_client)
+        span_id, parent_span_id, trace_id, span_name,
+        annotations, binary_annotations,
+    )
     message = thrift_obj_in_bytes(span)
 
     scribe_stream = registry_settings.get('zipkin.stream_name', 'zipkin')
@@ -204,16 +287,3 @@ def log_span(zipkin_attrs, span_name, registry_settings, annotations,
             "`zipkin.transport_handler` is a required config property, which"
             " is missing. It is a callback method which takes stream_name and"
             " a message as the params and logs message via scribe/kafka.")
-
-
-def log_service_span(zipkin_attrs, start_timestamp, end_timestamp,
-                     binary_annotations_dict, thrift_endpoint, method,
-                     registry_settings):
-    """Logs a span with `ss` and `sr` annotations.
-    """
-    annotations = annotation_list_builder(
-        {'sr': start_timestamp, 'ss': end_timestamp}, thrift_endpoint)
-    binary_annotations = binary_annotation_list_builder(
-        binary_annotations_dict, thrift_endpoint)
-    log_span(zipkin_attrs, method, registry_settings,
-             annotations, binary_annotations, False)

@@ -3,50 +3,23 @@ import mock
 from pyramid_zipkin import thrift_helper
 
 
-@mock.patch(
-    'pyramid_zipkin.thrift_helper.generate_random_64bit_string',
-    autospec=True,
-)
 @mock.patch('pyramid_zipkin.thrift_helper.zipkin_core.Span', autospec=True)
-def test_create_span_creates_a_child_span_object_for_child(
-        Span, gen_random_str, sampled_zipkin_attr):
-    gen_random_str.return_value = '47133d482ba4f605'
-    unsigned_hex_to_signed_int = thrift_helper.unsigned_hex_to_signed_int
-    assert Span.return_value == thrift_helper.create_span(
-        zipkin_attrs=sampled_zipkin_attr,
+def test_create_span(Span):
+    # Not much logic here so this is just a smoke test. The only
+    # substantive thing is that hex IDs get converted to ints.
+    thrift_helper.create_span(
+        span_id='0000000000000001',
+        parent_span_id='0000000000000002',
+        trace_id='000000000000000f',
         span_name='foo',
-        annotations=['annotations'],
-        binary_annotations=['binary_annotations'],
-        is_client=True,
+        annotations='ann',
+        binary_annotations='binary_ann',
     )
     Span.assert_called_once_with(**{
-        'name': 'foo',
-        'trace_id': unsigned_hex_to_signed_int('17133d482ba4f605'),
-        'annotations': ['annotations'],
-        'binary_annotations': ['binary_annotations'],
-        'parent_id': unsigned_hex_to_signed_int('27133d482ba4f605'),
-        'id': unsigned_hex_to_signed_int('47133d482ba4f605'),
-    })
-
-
-@mock.patch('pyramid_zipkin.thrift_helper.zipkin_core.Span', autospec=True)
-def test_create_span_creates_a_default_span_object(
-        Span, sampled_zipkin_attr):
-    unsigned_hex_to_signed_int = thrift_helper.unsigned_hex_to_signed_int
-    assert Span.return_value == thrift_helper.create_span(
-        zipkin_attrs=sampled_zipkin_attr,
-        span_name='foo',
-        annotations=['annotations'],
-        binary_annotations=['binary_annotations'],
-        is_client=False,
-    )
-    Span.assert_called_once_with(**{
-        'name': 'foo',
-        'trace_id': unsigned_hex_to_signed_int('17133d482ba4f605'),
-        'binary_annotations': ['binary_annotations'],
-        'annotations': ['annotations'],
-        'parent_id': unsigned_hex_to_signed_int('37133d482ba4f605'),
-        'id': unsigned_hex_to_signed_int('27133d482ba4f605'),
+        'id': 1, 'parent_id': 2,
+        'name': 'foo', 'trace_id': 15,
+        'name': 'foo', 'annotations': 'ann',
+        'binary_annotations': 'binary_ann',
     })
 
 

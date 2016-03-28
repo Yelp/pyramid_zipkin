@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 def get_timestamps(span):
     timestamps = {}
     for ann in span['annotations']:
@@ -29,3 +30,20 @@ def massage_result_span(span_obj):
     span['binary_annotations'].sort(key=lambda ann: ann['key'])
     remove_ipv4(span)
     return span
+
+
+def assert_extra_annotations(span, annotations):
+    seen_extra_annotations = dict(
+        (ann.value, ann.timestamp) for ann
+        in span.annotations
+        if ann.value not in ('ss', 'sr', 'cs', 'cr')
+    )
+    assert annotations == seen_extra_annotations
+
+
+def assert_extra_binary_annotations(span, binary_annotations):
+    seen_extra_binary_annotations = dict(
+        (ann.key, ann.value) for ann in span.binary_annotations
+        if ann.key not in ('http.uri', 'http.uri.qs')
+    )
+    assert binary_annotations == seen_extra_binary_annotations
