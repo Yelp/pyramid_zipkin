@@ -1,6 +1,13 @@
-0.9.0 (2016-03-23)
+0.9.0 (2016-03-27)
 ------------------
 - Fixed bug where headers were not 64-bit unsigned hex strings.
+- Added ClientSpanContext, that lets users log arbitrary trees of
+  client spans.
+- Deprecates "is_client=True" debug logging key in favor of a
+  non-None "service_name" key for indicating that a span logged
+  is a new client span.
+- Batches up additional annotations in client before sending
+  to the collector.
 
 0.8.1 (2016-03-02)
 ------------------
