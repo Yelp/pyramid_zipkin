@@ -33,6 +33,7 @@ class ZipkinLoggingContext(object):
         self.thrift_endpoint = thrift_endpoint
         self.handler = log_handler
         self.request_method = request.method
+        self.request_path = request.path
         self.registry_settings = request.registry.settings
         self.response_status_code = 0
         self.binary_annotations_dict = {}
@@ -141,11 +142,13 @@ class ZipkinLoggingContext(object):
                 self.thrift_endpoint,
             )
 
+            span_name = "{0} {1}".format(
+                self.request_method, self.request_path)
             log_span(
                 span_id=self.zipkin_attrs.span_id,
                 parent_span_id=self.zipkin_attrs.parent_span_id,
                 trace_id=self.zipkin_attrs.trace_id,
-                span_name=self.request_method,
+                span_name=span_name,
                 annotations=thrift_annotations,
                 binary_annotations=thrift_binary_annotations,
                 registry_settings=self.registry_settings,

@@ -99,6 +99,8 @@ def test_zipkin_logging_context_log_spans(
 
     context.start_timestamp = 24
     context.response_status_code = 200
+    context.request_method = 'GET'
+    context.request_path = '/foo'
 
     context.binary_annotations_dict = {'k': 'v'}
     time_mock.return_value = 42
@@ -115,7 +117,7 @@ def test_zipkin_logging_context_log_spans(
         'span_id': server_span_id,
         'parent_span_id': parent_span_id,
         'trace_id': trace_id,
-        'span_name': context.request_method,
+        'span_name': 'GET /foo',
         'annotations': expected_server_annotations,
         'binary_annotations': expected_server_bin_annotations,
         'registry_settings': context.registry_settings,
