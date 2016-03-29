@@ -134,6 +134,7 @@ These settings can be added like so:
 
         def main(global_config, **settings):
             # ...
+            settings['service_name'] = 'zipkin'  # this need to be add for running 
             settings['zipkin.blacklisted_paths'] = [r'^/foo/?']
             settings['zipkin.blacklisted_routes'] = ['bar']
             settings['zipkin.trace_id_generator'] = lambda req: '0x42'
