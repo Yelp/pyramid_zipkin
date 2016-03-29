@@ -6,7 +6,11 @@ from pyramid_zipkin import request_helper
 @mock.patch('pyramid_zipkin.request_helper.codecs.encode', autospec=True)
 def test_generate_random_64bit_string(rand):
     rand.return_value = b'17133d482ba4f605'
-    assert request_helper.generate_random_64bit_string() == '17133d482ba4f605'
+    random_string = request_helper.generate_random_64bit_string()
+    assert random_string == '17133d482ba4f605'
+    # This acts as a contract test of sorts. This should return a str
+    # in both py2 and py3. IOW, no unicode objects.
+    assert isinstance(random_string, str)
 
 
 def test_should_not_sample_path_returns_true_if_path_is_blacklisted(request):
