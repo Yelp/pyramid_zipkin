@@ -27,8 +27,11 @@ class ZipkinAttrs(namedtuple(
 
 
 def generate_random_64bit_string():
-    """Returns a 64 bit UTF-8 encoded string"""
-    return codecs.encode(os.urandom(8), 'hex_codec').decode('utf-8')
+    """Returns a 64 bit UTF-8 encoded string. In the interests of simplicity,
+    this is always cast to a `str` instead of (in py2 land) a unicode string.
+    Certain clients (I'm looking at you, Twisted) don't enjoy unicode headers.
+    """
+    return str(codecs.encode(os.urandom(8), 'hex_codec').decode('utf-8'))
 
 
 def get_trace_id(request):
