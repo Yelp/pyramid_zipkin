@@ -1,3 +1,7 @@
+0.9.1 (2016-03-29)
+------------------
+- Made generate_random_64bit_string always return str, not unicode
+
 0.9.0 (2016-03-27)
 ------------------
 - Fixed bug where headers were not 64-bit unsigned hex strings.
