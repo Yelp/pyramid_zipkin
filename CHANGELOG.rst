@@ -1,3 +1,7 @@
+0.9.2 (2016-04-07)
+------------------
+- Don't set parent_span_id on root span
+
 0.9.1 (2016-03-29)
 ------------------
 - Made generate_random_64bit_string always return str, not unicode
