@@ -52,7 +52,7 @@ def get_span(annotation, uri_binary_annotation, uri_qs_binary_annotation):
 
     return {'debug': False,
             'id': 1,
-            'parent_id': 0,
+            'parent_id': None,
             'duration': None,
             'timestamp': None,
             'annotations': sorted([sr_annotation, ss_annotation],
