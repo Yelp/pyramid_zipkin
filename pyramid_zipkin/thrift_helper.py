@@ -124,14 +124,16 @@ def create_span(
     """Takes a bunch of span attributes and returns a thriftpy representation
     of the span.
     """
-    return zipkin_core.Span(**{
+    span_dict = {
         "trace_id": unsigned_hex_to_signed_int(trace_id),
         "name": span_name,
         "id": unsigned_hex_to_signed_int(span_id),
-        "parent_id": unsigned_hex_to_signed_int(parent_span_id),
         "annotations": annotations,
         "binary_annotations": binary_annotations,
-    })
+    }
+    if parent_span_id:
+        span_dict["parent_id"] = unsigned_hex_to_signed_int(parent_span_id)
+    return zipkin_core.Span(**span_dict)
 
 
 def thrift_obj_in_bytes(thrift_obj):  # pragma: no cover
