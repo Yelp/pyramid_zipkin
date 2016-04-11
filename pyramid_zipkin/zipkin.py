@@ -17,7 +17,6 @@ from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import generate_random_64bit_string
 from pyramid_zipkin.request_helper import ZipkinAttrs
 from pyramid_zipkin.thread_local import get_zipkin_attrs
-from pyramid_zipkin.thread_local import pop_attrs_context
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import create_endpoint
@@ -97,6 +96,7 @@ class ClientSpanContext(object):
         threadlocal stack regardless of sampling, so they always need to be
         popped off. The actual logging of spans depends on sampling.
         """
+        # Pop off zipkin attrs if they got pushed on in the first place
         if self.do_pop_attrs:
             pop_zipkin_attrs()
         if not self.is_sampled:
@@ -105,7 +105,6 @@ class ClientSpanContext(object):
         end_timestamp = time.time()
         # Put the old parent_span_id back on the handler
         self.handler.parent_span_id = self.old_parent_span_id
-        # Pop off the new zipkin attrs
         self.annotations['cs'] = self.start_timestamp
         self.annotations['cr'] = end_timestamp
         # Store this client span on the logging handler object
@@ -133,9 +132,7 @@ def zipkin_tween(handler, registry):
         zipkin_attrs = create_zipkin_attr(request)
         push_zipkin_attrs(zipkin_attrs)
 
-        # This context ensures that, regardless of what happens in the request,
-        # this set of zipkin attrs will be popped off the threadlocal stack.
-        with pop_attrs_context():
+        try:
             # If this request isn't sampled, don't go through the work
             # of initializing the rest of the zipkin attributes
             if not zipkin_attrs.is_sampled:
@@ -153,6 +150,9 @@ def zipkin_tween(handler, registry):
                         request, response)
 
                 return response
+        finally:
+            # Regardless of what happens in the request we want to pop attrs
+            pop_zipkin_attrs()
 
     return tween
 

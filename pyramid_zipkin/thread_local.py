@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import contextlib
 import threading
 
 _thread_local = threading.local()
@@ -34,17 +33,6 @@ def pop_zipkin_attrs():
     requests = get_thread_local_requests()
     if requests:
         return requests.pop()
-
-
-@contextlib.contextmanager
-def pop_attrs_context():
-    """A simple contextmanager that always pops attrs off the
-    stack when it's done.
-    """
-    try:
-        yield
-    finally:
-        pop_zipkin_attrs()
 
 
 def push_zipkin_attrs(zipkin_attr):
