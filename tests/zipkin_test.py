@@ -1,5 +1,7 @@
 import mock
 
+from pyramid.request import Request
+
 from pyramid_zipkin import zipkin
 from pyramid_zipkin.logging_helper import ZipkinLoggerHandler
 from pyramid_zipkin.request_helper import ZipkinAttrs
@@ -34,6 +36,20 @@ def test_tween_is_wrapped_by_zipkin_logging_context():
     instance.__exit__.assert_called_once_with(None, None, None)
 
 
+@mock.patch('pyramid_zipkin.request_helper.is_tracing', autospec=True)
+def test_tween_not_sampled_sets_zipkin_trace_id(is_tracing_mock):
+    # Tests that even in the unsampled case, the zipkin tween sets
+    # the zipkin_trace_id attr on the request.
+    is_tracing_mock.return_value = False
+    assert get_zipkin_attrs() is None
+    request = Request.blank('/', headers={'X-B3-TraceId': 'deadbeefdeadbeef'})
+    tween = zipkin.zipkin_tween(mock.Mock(), 'registry')
+    response = tween(request)
+    assert request.zipkin_trace_id == 'deadbeefdeadbeef'
+    # Make sure the tween doesn't leave zipkin attrs on threadlocal storage
+    assert get_zipkin_attrs() is None
+
+
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
 def test_create_headers_for_new_span_empty_if_no_active_request(get_mock):
     get_mock.return_value = None
@@ -58,11 +74,11 @@ def test_create_headers_for_new_span_returns_header_if_active_request(
 
 
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.push_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 def test_client_span_context_no_zipkin_attrs(
-    generate_string_mock,
     get_zipkin_attrs_mock,
+    push_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
 ):
     # When not in a Zipkin context, don't do anything
@@ -70,26 +86,29 @@ def test_client_span_context_no_zipkin_attrs(
     context = zipkin.ClientSpanContext('svc', 'span')
     with context:
         pass
-    assert not generate_string_mock.called
     assert not pop_zipkin_attrs_mock.called
+    assert not push_zipkin_attrs_mock.called
 
 
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.push_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 def test_client_span_context_not_sampled(
-    generate_string_mock,
     get_zipkin_attrs_mock,
+    push_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
 ):
-    # When ZipkinAttrs say this request isn't sampled, do nothing
+    # When ZipkinAttrs say this request isn't sampled, push new attrs
+    # onto threadlocal stack, but do nothing else.
     get_zipkin_attrs_mock.return_value = ZipkinAttrs(
         'trace_id', 'span_id', 'parent_span_id', 'flags', False)
     context = zipkin.ClientSpanContext('svc', 'span')
     with context:
         pass
-    assert not generate_string_mock.called
-    assert not pop_zipkin_attrs_mock.called
+    # Even in the not-sampled case, if the client context generates
+    # new zipkin attrs, it should pop them off.
+    assert pop_zipkin_attrs_mock.called
+    assert push_zipkin_attrs_mock.called
 
 
 @mock.patch('pyramid_zipkin.thread_local._thread_local', autospec=True)

@@ -7,4 +7,5 @@ build/
 __pycache__
 dist/
 venv
+tags
 *.swp

@@ -17,6 +17,7 @@ from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import generate_random_64bit_string
 from pyramid_zipkin.request_helper import ZipkinAttrs
 from pyramid_zipkin.thread_local import get_zipkin_attrs
+from pyramid_zipkin.thread_local import pop_attrs_context
 from pyramid_zipkin.thread_local import pop_zipkin_attrs
 from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import create_endpoint
@@ -51,36 +52,53 @@ class ClientSpanContext(object):
     def __enter__(self):
         """Enter the client context. All spans/annotations logged inside this
         context will be attributed to this client span.
+
+        In the unsampled case, this context still generates new span IDs and
+        pushes them onto the threadlocal stack, so client calls made will pass
+        the correct headers. However, the logging handler is never attached
+        in the unsampled case, so it is left alone.
         """
         zipkin_attrs = get_zipkin_attrs()
         self.is_sampled = zipkin_attrs is not None and zipkin_attrs.is_sampled
-        if not self.is_sampled:
-            return self
-
-        self.start_timestamp = time.time()
         self.span_id = generate_random_64bit_string()
-        # Put span ID on logging handler. Assume there's only a single handler
-        # on the logger, since all logging should be set up in this package.
-        self.handler = zipkin_logger.handlers[0]
-        # Store the old parent_span_id, probably None, in case we have
-        # nested ClientSpanContexts
-        self.old_parent_span_id = self.handler.parent_span_id
-        self.handler.parent_span_id = self.span_id
+        self.start_timestamp = time.time()
         # Push new zipkin attributes onto the threadlocal stack, so that
         # create_headers_for_new_span() performs as expected in this context.
         # The only difference is that span_id is this new client span's ID
-        # and parent_span_id is the old span's ID.
-        new_zipkin_attrs = ZipkinAttrs(
-            trace_id=zipkin_attrs.trace_id,
-            span_id=self.span_id,
-            parent_span_id=zipkin_attrs.span_id,
-            flags=zipkin_attrs.flags,
-            is_sampled=zipkin_attrs.is_sampled,
-        )
-        push_zipkin_attrs(new_zipkin_attrs)
+        # and parent_span_id is the old span's ID. Checking for a None
+        # zipkin_attrs value is protecting against calling this outside of
+        # a zipkin logging context entirely (e.g. in a batch). If new attrs
+        # are stored, set a flag to pop them off at context exit.
+        self.do_pop_attrs = False
+        if zipkin_attrs is not None:
+            new_zipkin_attrs = ZipkinAttrs(
+                trace_id=zipkin_attrs.trace_id,
+                span_id=self.span_id,
+                parent_span_id=zipkin_attrs.span_id,
+                flags=zipkin_attrs.flags,
+                is_sampled=zipkin_attrs.is_sampled,
+            )
+            push_zipkin_attrs(new_zipkin_attrs)
+            self.do_pop_attrs = True
+        # In the sampled case, patch the ZipkinLoggerHandler.
+        if self.is_sampled:
+            # Put span ID on logging handler. Assume there's only a single
+            # handler, since all logging should be set up in this package.
+            self.handler = zipkin_logger.handlers[0]
+            # Store the old parent_span_id, probably None, in case we have
+            # nested ClientSpanContexts
+            self.old_parent_span_id = self.handler.parent_span_id
+            self.handler.parent_span_id = self.span_id
+
         return self
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback):
+        """Exit the client context. The new zipkin attrs are pushed onto the
+        threadlocal stack regardless of sampling, so they always need to be
+        popped off. The actual logging of spans depends on sampling.
+        """
+        if self.do_pop_attrs:
+            pop_zipkin_attrs()
         if not self.is_sampled:
             return
 
@@ -88,7 +106,6 @@ class ClientSpanContext(object):
         # Put the old parent_span_id back on the handler
         self.handler.parent_span_id = self.old_parent_span_id
         # Pop off the new zipkin attrs
-        pop_zipkin_attrs()
         self.annotations['cs'] = self.start_timestamp
         self.annotations['cr'] = end_timestamp
         # Store this client span on the logging handler object
@@ -111,25 +128,31 @@ def zipkin_tween(handler, registry):
     :returns: pyramid tween
     """
     def tween(request):
+        # Creates zipkin attributes, attaches a zipkin_trace_id attr to the
+        # request, and pushes the attrs onto threadlocal stack.
         zipkin_attrs = create_zipkin_attr(request)
+        push_zipkin_attrs(zipkin_attrs)
 
-        # If this request isn't sampled, don't go through the work
-        # of initializing the rest of the zipkin attributes
-        if not zipkin_attrs.is_sampled:
-            return handler(request)
+        # This context ensures that, regardless of what happens in the request,
+        # this set of zipkin attrs will be popped off the threadlocal stack.
+        with pop_attrs_context():
+            # If this request isn't sampled, don't go through the work
+            # of initializing the rest of the zipkin attributes
+            if not zipkin_attrs.is_sampled:
+                return handler(request)
 
-        # If the request IS sampled, we create thrift objects, store
-        # thread-local variables, etc, to enter zipkin logging context
-        thrift_endpoint = create_endpoint(request)
-        log_handler = ZipkinLoggerHandler(zipkin_attrs)
-        with ZipkinLoggingContext(zipkin_attrs, thrift_endpoint, log_handler,
-                                  request) as context:
-            response = handler(request)
-            context.response_status_code = response.status_code
-            context.binary_annotations_dict = get_binary_annotations(
-                    request, response)
+            # If the request IS sampled, we create thrift objects and
+            # enter zipkin logging context
+            thrift_endpoint = create_endpoint(request)
+            log_handler = ZipkinLoggerHandler(zipkin_attrs)
+            with ZipkinLoggingContext(zipkin_attrs, thrift_endpoint,
+                                      log_handler, request) as context:
+                response = handler(request)
+                context.response_status_code = response.status_code
+                context.binary_annotations_dict = get_binary_annotations(
+                        request, response)
 
-            return response
+                return response
 
     return tween
 

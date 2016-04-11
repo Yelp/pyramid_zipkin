@@ -41,23 +41,18 @@ class ZipkinLoggingContext(object):
     def __enter__(self):
         """Actions to be taken before request is handled.
         1) Attach `zipkin_logger` to :class:`ZipkingLoggerHandler` object.
-        2) Push zipkin attributes to thread_local stack.
-        3) Record the start timestamp.
+        2) Record the start timestamp.
         """
         zipkin_logger.addHandler(self.handler)
-        push_zipkin_attrs(self.zipkin_attrs)
         self.start_timestamp = time.time()
         return self
 
     def __exit__(self, _type, _value, _traceback):
         """Actions to be taken post request handling.
-        1) Record the end timestamp.
-        2) Pop zipkin attributes from thread_local stack
-        3) Detach `zipkin_logger` handler.
-        4) And finally, if sampled, log the service annotations to scribe
+        1) Log the service annotations to scribe
+        2) Detach `zipkin_logger` handler.
         """
         self.log_spans()
-        pop_zipkin_attrs()
         zipkin_logger.removeHandler(self.handler)
 
     def is_response_success(self):
