@@ -44,7 +44,7 @@ def test_tween_not_sampled_sets_zipkin_trace_id(is_tracing_mock):
     assert get_zipkin_attrs() is None
     request = Request.blank('/', headers={'X-B3-TraceId': 'deadbeefdeadbeef'})
     tween = zipkin.zipkin_tween(mock.Mock(), 'registry')
-    response = tween(request)
+    tween(request)
     assert request.zipkin_trace_id == 'deadbeefdeadbeef'
     # Make sure the tween doesn't leave zipkin attrs on threadlocal storage
     assert get_zipkin_attrs() is None

@@ -5,8 +5,6 @@ from collections import defaultdict
 
 from pyramid_zipkin.exception import ZipkinError
 from pyramid_zipkin.request_helper import generate_random_64bit_string
-from pyramid_zipkin.thread_local import pop_zipkin_attrs
-from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import annotation_list_builder
 from pyramid_zipkin.thrift_helper import binary_annotation_list_builder
 from pyramid_zipkin.thrift_helper import copy_endpoint_with_new_service_name
