@@ -1,3 +1,7 @@
+0.10.0 (2016-04-12)
+-------------------
+- Always generate ZipkinAttrs, even when a request isn't sampled.
+
 0.9.2 (2016-04-07)
 ------------------
 - Don't set parent_span_id on root span

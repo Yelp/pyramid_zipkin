@@ -119,7 +119,10 @@ class ClientSpanContext(object):
 
 def zipkin_tween(handler, registry):
     """
-    Factory for pyramid tween to handle zipkin server logging.
+    Factory for pyramid tween to handle zipkin server logging. Note that even
+    if the request isn't sampled, Zipkin attributes are generated and pushed
+    into threadlocal storage, so `create_headers_for_new_span` and
+    `ClientSpanContext` will have access to the proper Zipkin state.
 
     :param handler: pyramid request handler
     :param registry: pyramid app registry
