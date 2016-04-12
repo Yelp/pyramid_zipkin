@@ -17,23 +17,17 @@ def context():
 
 
 @mock.patch('pyramid_zipkin.logging_helper.zipkin_logger', autospec=True)
-@mock.patch('pyramid_zipkin.thread_local._thread_local',
-            autospec=True)
 @mock.patch('pyramid_zipkin.logging_helper.time.time', autospec=True)
-def test_zipkin_logging_context(
-        time_mock, tl_mock, mock_logger, context):
+def test_zipkin_logging_context(time_mock, mock_logger, context):
     # Tests the context manager aspects of the ZipkinLoggingContext
     time_mock.return_value = 42
-    tl_mock.requests = []
     # Ignore the actual logging part
     with mock.patch.object(context, 'log_spans'):
         with context:
             mock_logger.addHandler.assert_called_once_with(context.handler)
             assert context.start_timestamp == 42
-            assert tl_mock.requests[0] == context.zipkin_attrs
         # Make sure the handler and the zipkin attrs are gone
         mock_logger.removeHandler.assert_called_once_with(context.handler)
-        assert tl_mock.requests == []
         assert context.log_spans.call_count == 1
 
 

@@ -44,10 +44,31 @@ def test_headers_created_for_sampled_child_span(
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
+    _assert_headers_present(settings, is_sampled='1')
+
+
+@mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string')
+def test_headers_created_for_unsampled_child_span(
+    mock_generate_string,
+    sampled_trace_id_generator,
+):
+    # Headers are still created if the span is unsampled.
+    mock_generate_string.return_value = '17133d482ba4f605'
+    settings = {
+        'zipkin.tracing_percent': 0,
+        'zipkin.trace_id_generator': sampled_trace_id_generator,
+    }
+    _assert_headers_present(settings, is_sampled='0')
+
+
+def _assert_headers_present(settings, is_sampled):
+    # Helper method for smoke testing proper setting of headers.
+    # TraceId and ParentSpanId are set by sampled_trace_id_generator
+    # and mock_generate_string in upstream test methods.
     expected = {
         'X-B3-Flags': '0',
         'X-B3-ParentSpanId': '17133d482ba4f605',
-        'X-B3-Sampled': '1',
+        'X-B3-Sampled': is_sampled,
         'X-B3-TraceId': '0' * 16,
     }
 
@@ -57,18 +78,6 @@ def test_headers_created_for_sampled_child_span(
     headers_json.pop('X-B3-SpanId')  # Randomly generated - Ignore.
 
     assert expected == headers_json
-
-
-def test_headers_not_created_for_unsampled_child_span(default_trace_id_generator):
-    # Tests that empty headers are returned if the request isn't sampled
-    settings = {
-        'zipkin.tracing_percent': 0,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
-
-    headers = TestApp(main({}, **settings)).get('/sample_child_span',
-                                                status=200)
-    assert {} == headers.json
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
