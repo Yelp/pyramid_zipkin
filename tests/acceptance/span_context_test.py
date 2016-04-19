@@ -109,3 +109,14 @@ def test_span_context(
     assert_extra_binary_annotations(child_span, {'foo': 'bar', 'child': 'true'})
     assert_extra_annotations(grandchild_span, {'grandchild_annotation': 1000000})
     assert_extra_binary_annotations(grandchild_span, {'grandchild': 'true'})
+
+    # For the span produced by SpanContext, assert cs==sr and ss==cr
+    # Initialize them all so the equalities won't be true.
+    annotations = {
+        'cs': 0, 'sr': 1, 'ss': 2, 'cr': 3
+    }
+    for annotation in child_span.annotations:
+        if annotation.value in annotations:
+            annotations[annotation.value] = annotation.timestamp
+    assert annotations['cs'] == annotations['sr']
+    assert annotations['ss'] == annotations['cr']
