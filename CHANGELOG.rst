@@ -1,3 +1,7 @@
+0.11.0 (2016-04-19)
+-------------------
+- Renames ClientSpanContext to SpanContext, adds 'ss' and 'sr' annotations.
+
 0.10.0 (2016-04-12)
 -------------------
 - Always generate ZipkinAttrs, even when a request isn't sampled.

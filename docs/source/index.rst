@@ -12,7 +12,7 @@ Features include:
 
 * API ``create_headers_for_new_span`` to generate new client headers.
 
-* API ``ClientSpanContext`` for creating trees of new client spans.
+* API ``SpanContext`` for logging trees of spans in code.
 
 * Adds ``http.uri`` and ``http.uri.qs`` binary annotations automatically for each trace.
 

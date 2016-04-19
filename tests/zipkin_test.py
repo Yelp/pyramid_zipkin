@@ -76,14 +76,14 @@ def test_create_headers_for_new_span_returns_header_if_active_request(
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.push_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-def test_client_span_context_no_zipkin_attrs(
+def test_span_text_no_zipkin_attrs(
     get_zipkin_attrs_mock,
     push_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
 ):
     # When not in a Zipkin context, don't do anything
     get_zipkin_attrs_mock.return_value = None
-    context = zipkin.ClientSpanContext('svc', 'span')
+    context = zipkin.SpanContext('svc', 'span')
     with context:
         pass
     assert not pop_zipkin_attrs_mock.called
@@ -93,7 +93,7 @@ def test_client_span_context_no_zipkin_attrs(
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.push_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-def test_client_span_context_not_sampled(
+def test_span_text_not_sampled(
     get_zipkin_attrs_mock,
     push_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
@@ -102,7 +102,7 @@ def test_client_span_context_not_sampled(
     # onto threadlocal stack, but do nothing else.
     get_zipkin_attrs_mock.return_value = ZipkinAttrs(
         'trace_id', 'span_id', 'parent_span_id', 'flags', False)
-    context = zipkin.ClientSpanContext('svc', 'span')
+    context = zipkin.SpanContext('svc', 'span')
     with context:
         pass
     # Even in the not-sampled case, if the client context generates
@@ -114,7 +114,7 @@ def test_client_span_context_not_sampled(
 @mock.patch('pyramid_zipkin.thread_local._thread_local', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.zipkin_logger', autospec=True)
-def test_client_span_context(
+def test_span_text(
     zipkin_logger_mock,
     generate_string_mock,
     thread_local_mock,
@@ -129,7 +129,7 @@ def test_client_span_context(
     zipkin_logger_mock.handlers = [logging_handler]
     generate_string_mock.return_value = '1'
 
-    context = zipkin.ClientSpanContext(
+    context = zipkin.SpanContext(
         service_name='svc',
         span_name='span',
         annotations={'something': 1},
@@ -149,9 +149,9 @@ def test_client_span_context(
 
     client_span = logging_handler.client_spans.pop()
     assert logging_handler.client_spans == []
-    # 'cs' and 'cr' annotations are based on timestamps so pop em.
+    # These reserved annotations are based on timestamps so pop em.
     # This also acts as a check that they exist.
-    for annotation in ('cs', 'cr'):
+    for annotation in ('cs', 'cr', 'ss', 'sr'):
         client_span['annotations'].pop(annotation)
 
     expected_client_span = {

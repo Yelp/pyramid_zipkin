@@ -81,7 +81,7 @@ def _assert_headers_present(settings, is_sampled):
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_client_context(
+def test_span_context(
     thrift_obj,
     sampled_trace_id_generator
 ):
@@ -91,7 +91,7 @@ def test_client_context(
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
-    TestApp(main({}, **settings)).get('/client_context', status=200)
+    TestApp(main({}, **settings)).get('/span_context', status=200)
 
     # Ugly extraction of spans from mock thrift_obj call args
     # The order of span logging goes from innermost (grandchild) up.
@@ -109,3 +109,14 @@ def test_client_context(
     assert_extra_binary_annotations(child_span, {'foo': 'bar', 'child': 'true'})
     assert_extra_annotations(grandchild_span, {'grandchild_annotation': 1000000})
     assert_extra_binary_annotations(grandchild_span, {'grandchild': 'true'})
+
+    # For the span produced by SpanContext, assert cs==sr and ss==cr
+    # Initialize them all so the equalities won't be true.
+    annotations = {
+        'cs': 0, 'sr': 1, 'ss': 2, 'cr': 3
+    }
+    for annotation in child_span.annotations:
+        if annotation.value in annotations:
+            annotations[annotation.value] = annotation.timestamp
+    assert annotations['cs'] == annotations['sr']
+    assert annotations['ss'] == annotations['cr']

@@ -161,7 +161,7 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
         # If parent_span_id is set, the application is in a logging context
         # where each additional client span logged has this span as its parent.
         # This is to allow logging of hierarchies of spans instead of just
-        # single client spans. See the ClientSpanContext class.
+        # single client spans. See the SpanContext class.
         self.parent_span_id = None
         self.zipkin_attrs = zipkin_attrs
         self.client_spans = []
@@ -215,7 +215,7 @@ class ZipkinLoggerHandler(logging.StreamHandler, object):
             represent a new client span. If service_name is omitted, this is
             considered additional annotation for the currently active
             "parent span" (either the server span or the parent client span
-            inside a ClientSpanContext).
+            inside a SpanContext).
         """
         if not self.zipkin_attrs.is_sampled:
             return

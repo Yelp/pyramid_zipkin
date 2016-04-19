@@ -42,15 +42,15 @@ def sample_v2_client(request):
     return {}
 
 
-@view_config(route_name='client_context', renderer='json')
-def client_context(request):
+@view_config(route_name='span_context', renderer='json')
+def span_context(request):
     # These annotations should go to the server span
     zipkin_logger.debug({
         'annotations': {'server_annotation': 1},
         'binary_annotations': {'server': 'true'},
     })
-    # Creates a new client span child of the server span
-    with zipkin.ClientSpanContext(
+    # Creates a new span, a child of the server span
+    with zipkin.SpanContext(
         service_name='child', span_name='get',
         binary_annotations={'foo': 'bar'},
     ):
@@ -99,7 +99,7 @@ def main(global_config, **settings):
     config.add_route('sample_route_v2', '/sample_v2')
     config.add_route('sample_route_v2_client', '/sample_v2_client')
     config.add_route('sample_route_child_span', '/sample_child_span')
-    config.add_route('client_context', '/client_context')
+    config.add_route('span_context', '/span_context')
 
     config.add_route('server_error', '/server_error')
     config.add_route('client_error', '/client_error')
