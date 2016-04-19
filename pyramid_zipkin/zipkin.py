@@ -22,107 +22,12 @@ from pyramid_zipkin.thread_local import push_zipkin_attrs
 from pyramid_zipkin.thrift_helper import create_endpoint
 
 
-class ClientSpanContext(object):
-    """In this context, each additional client span logged will have their
-    parent span set to this client span's ID. It accomplishes that by
-    attaching this client span's ID to the logger handler.
-
-    Note: this contextmanager ONLY works within a pyramid_zipkin tween
-    context. Outside this context, the proper logging handlers will
-    not be set up.
-    """
-    def __init__(
-        self, service_name, span_name='span',
-        annotations=None, binary_annotations=None,
-    ):
-        """Enter the client context. Initializes a bunch of state related
-        to this span.
-
-        :param service_name: The name of the called service
-        :param span_name: Optional name of span, defaults to 'span'
-        :param annotations: Optional dict of str -> timestamp annotations
-        :param binary_annotations: Optional dict of str -> str span attrs
-        """
-        self.service_name = service_name
-        self.span_name = span_name
-        self.annotations = annotations or {}
-        self.binary_annotations = binary_annotations or {}
-
-    def __enter__(self):
-        """Enter the client context. All spans/annotations logged inside this
-        context will be attributed to this client span.
-
-        In the unsampled case, this context still generates new span IDs and
-        pushes them onto the threadlocal stack, so client calls made will pass
-        the correct headers. However, the logging handler is never attached
-        in the unsampled case, so it is left alone.
-        """
-        zipkin_attrs = get_zipkin_attrs()
-        self.is_sampled = zipkin_attrs is not None and zipkin_attrs.is_sampled
-        self.span_id = generate_random_64bit_string()
-        self.start_timestamp = time.time()
-        # Push new zipkin attributes onto the threadlocal stack, so that
-        # create_headers_for_new_span() performs as expected in this context.
-        # The only difference is that span_id is this new client span's ID
-        # and parent_span_id is the old span's ID. Checking for a None
-        # zipkin_attrs value is protecting against calling this outside of
-        # a zipkin logging context entirely (e.g. in a batch). If new attrs
-        # are stored, set a flag to pop them off at context exit.
-        self.do_pop_attrs = False
-        if zipkin_attrs is not None:
-            new_zipkin_attrs = ZipkinAttrs(
-                trace_id=zipkin_attrs.trace_id,
-                span_id=self.span_id,
-                parent_span_id=zipkin_attrs.span_id,
-                flags=zipkin_attrs.flags,
-                is_sampled=zipkin_attrs.is_sampled,
-            )
-            push_zipkin_attrs(new_zipkin_attrs)
-            self.do_pop_attrs = True
-        # In the sampled case, patch the ZipkinLoggerHandler.
-        if self.is_sampled:
-            # Put span ID on logging handler. Assume there's only a single
-            # handler, since all logging should be set up in this package.
-            self.handler = zipkin_logger.handlers[0]
-            # Store the old parent_span_id, probably None, in case we have
-            # nested ClientSpanContexts
-            self.old_parent_span_id = self.handler.parent_span_id
-            self.handler.parent_span_id = self.span_id
-
-        return self
-
-    def __exit__(self, _exc_type, _exc_value, _exc_traceback):
-        """Exit the client context. The new zipkin attrs are pushed onto the
-        threadlocal stack regardless of sampling, so they always need to be
-        popped off. The actual logging of spans depends on sampling.
-        """
-        # Pop off zipkin attrs if they got pushed on in the first place
-        if self.do_pop_attrs:
-            pop_zipkin_attrs()
-        if not self.is_sampled:
-            return
-
-        end_timestamp = time.time()
-        # Put the old parent_span_id back on the handler
-        self.handler.parent_span_id = self.old_parent_span_id
-        self.annotations['cs'] = self.start_timestamp
-        self.annotations['cr'] = end_timestamp
-        # Store this client span on the logging handler object
-        self.handler.store_client_span(
-            span_name=self.span_name,
-            service_name=self.service_name,
-            annotations=self.annotations,
-            binary_annotations=self.binary_annotations,
-            span_id=self.span_id,
-        )
-
-
 def zipkin_tween(handler, registry):
     """
     Factory for pyramid tween to handle zipkin server logging. Note that even
     if the request isn't sampled, Zipkin attributes are generated and pushed
     into threadlocal storage, so `create_headers_for_new_span` and
-    `ClientSpanContext` will have access to the proper Zipkin state.
+    `SpanContext` will have access to the proper Zipkin state.
 
     :param handler: pyramid request handler
     :param registry: pyramid app registry
@@ -185,3 +90,104 @@ def create_headers_for_new_span():
         'X-B3-Flags': '0',
         'X-B3-Sampled': '1' if zipkin_attrs.is_sampled else '0',
     }
+
+
+class SpanContext(object):
+    """This contextmanager creates a new span (with cs, sr, ss, and cr)
+    annotations. Each additional client span logged inside this context will
+    have their parent span set to this new span's ID. It accomplishes that by
+    attaching this span's ID to the logger handler.
+
+    Note: this contextmanager ONLY works within a pyramid_zipkin tween
+    context. Outside this context, the proper logging handlers will
+    not be set up.
+    """
+    def __init__(
+        self, service_name, span_name='span',
+        annotations=None, binary_annotations=None,
+    ):
+        """Enter the client context. Initializes a bunch of state related
+        to this span.
+
+        :param service_name: The name of the called service
+        :param span_name: Optional name of span, defaults to 'span'
+        :param annotations: Optional dict of str -> timestamp annotations
+        :param binary_annotations: Optional dict of str -> str span attrs
+        """
+        self.service_name = service_name
+        self.span_name = span_name
+        self.annotations = annotations or {}
+        self.binary_annotations = binary_annotations or {}
+
+    def __enter__(self):
+        """Enter the new span context. All spans/annotations logged inside this
+        context will be attributed to this span.
+
+        In the unsampled case, this context still generates new span IDs and
+        pushes them onto the threadlocal stack, so downstream services calls
+        made will pass the correct headers. However, the logging handler is
+        never attached in the unsampled case, so it is left alone.
+        """
+        zipkin_attrs = get_zipkin_attrs()
+        self.is_sampled = zipkin_attrs is not None and zipkin_attrs.is_sampled
+        self.span_id = generate_random_64bit_string()
+        self.start_timestamp = time.time()
+        # Push new zipkin attributes onto the threadlocal stack, so that
+        # create_headers_for_new_span() performs as expected in this context.
+        # The only difference is that span_id is this new span's ID
+        # and parent_span_id is the old span's ID. Checking for a None
+        # zipkin_attrs value is protecting against calling this outside of
+        # a zipkin logging context entirely (e.g. in a batch). If new attrs
+        # are stored, set a flag to pop them off at context exit.
+        self.do_pop_attrs = False
+        if zipkin_attrs is not None:
+            new_zipkin_attrs = ZipkinAttrs(
+                trace_id=zipkin_attrs.trace_id,
+                span_id=self.span_id,
+                parent_span_id=zipkin_attrs.span_id,
+                flags=zipkin_attrs.flags,
+                is_sampled=zipkin_attrs.is_sampled,
+            )
+            push_zipkin_attrs(new_zipkin_attrs)
+            self.do_pop_attrs = True
+        # In the sampled case, patch the ZipkinLoggerHandler.
+        if self.is_sampled:
+            # Put span ID on logging handler. Assume there's only a single
+            # handler, since all logging should be set up in this package.
+            self.handler = zipkin_logger.handlers[0]
+            # Store the old parent_span_id, probably None, in case we have
+            # nested SpanContexts
+            self.old_parent_span_id = self.handler.parent_span_id
+            self.handler.parent_span_id = self.span_id
+
+        return self
+
+    def __exit__(self, _exc_type, _exc_value, _exc_traceback):
+        """Exit the span context. The new zipkin attrs are pushed onto the
+        threadlocal stack regardless of sampling, so they always need to be
+        popped off. The actual logging of spans depends on sampling.
+        """
+        # Pop off zipkin attrs if they got pushed on in the first place
+        if self.do_pop_attrs:
+            pop_zipkin_attrs()
+        if not self.is_sampled:
+            return
+
+        end_timestamp = time.time()
+        # Put the old parent_span_id back on the handler
+        self.handler.parent_span_id = self.old_parent_span_id
+        # To get a full span we just set cs=sr and ss=cr.
+        self.annotations.update({
+            'cs': self.start_timestamp,
+            'sr': self.start_timestamp,
+            'ss': end_timestamp,
+            'cr': end_timestamp,
+        })
+        # Store this span on the logging handler object.
+        self.handler.store_client_span(
+            span_name=self.span_name,
+            service_name=self.service_name,
+            annotations=self.annotations,
+            binary_annotations=self.binary_annotations,
+            span_id=self.span_id,
+        )

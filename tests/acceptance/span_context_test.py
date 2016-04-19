@@ -81,7 +81,7 @@ def _assert_headers_present(settings, is_sampled):
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_client_context(
+def test_span_context(
     thrift_obj,
     sampled_trace_id_generator
 ):
@@ -91,7 +91,7 @@ def test_client_context(
         'zipkin.trace_id_generator': sampled_trace_id_generator,
     }
 
-    TestApp(main({}, **settings)).get('/client_context', status=200)
+    TestApp(main({}, **settings)).get('/span_context', status=200)
 
     # Ugly extraction of spans from mock thrift_obj call args
     # The order of span logging goes from innermost (grandchild) up.
