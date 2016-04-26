@@ -12,7 +12,7 @@ matrix:
   include:
     - python: 3.5
       env:
-        - TOX_ENV=py35
+        - TOXENV=py35
 install:
 - "pip install --use-mirrors tox coveralls"
 script:
