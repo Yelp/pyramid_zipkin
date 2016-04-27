@@ -53,32 +53,6 @@ def test_sample_server_span_with_specific_trace_id_which_samples(
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_no_sample_server_span_happens_for_500_response(
-        thrift_obj, default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
-
-    TestApp(main({}, **settings)).get('/server_error', status=500)
-
-    assert thrift_obj.call_count == 0
-
-
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_no_sample_server_span_happens_for_400_response(
-        thrift_obj, default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
-
-    TestApp(main({}, **settings)).get('/client_error', status=400)
-
-    assert thrift_obj.call_count == 0
-
-
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
@@ -154,9 +128,12 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
 
     def validate_span(span_obj):
         # Assert that the only present binary_annotations are ones we expect
-        expected_annotations = {'http.uri': '/sample',
-                                'http.uri.qs': '/sample?test=1',
-                                'other': '42'}
+        expected_annotations = {
+            'http.uri': '/sample',
+            'http.uri.qs': '/sample?test=1',
+            'response_status_code': '200',
+            'other': '42',
+        }
         result_span = test_helper.massage_result_span(span_obj)
         for ann in result_span['binary_annotations']:
             assert ann['value'] == expected_annotations.pop(ann['key'])

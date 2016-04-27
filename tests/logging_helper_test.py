@@ -127,6 +127,23 @@ def test_zipkin_logging_context_log_spans(
     }
 
 
+@mock.patch('pyramid_zipkin.logging_helper.log_span', autospec=True)
+def test_log_span_not_called_if_not_sampled(log_span_mock):
+    attr = ZipkinAttrs(
+        trace_id='0000000000000001',
+        span_id='0000000000000002',
+        parent_span_id=None,
+        flags=None,
+        is_sampled=False,
+    )
+    handler = logging_helper.ZipkinLoggerHandler(attr)
+    request = mock.Mock()
+    context = logging_helper.ZipkinLoggingContext(
+        attr, 'thrift_endpoint', handler, request)
+    context.log_spans()
+    assert log_span_mock.call_count == 0
+
+
 def test_zipkin_handler_init():
     handler = logging_helper.ZipkinLoggerHandler('foo')
     assert handler.zipkin_attrs == 'foo'
@@ -248,7 +265,12 @@ def test_get_binary_annotations():
     response = mock.Mock()
 
     annotations = logging_helper.get_binary_annotations(request, response)
-    expected = {'http.uri': '/path', 'http.uri.qs': '/path?time=now', 'k': 'v'}
+    expected = {
+        'http.uri': '/path',
+        'http.uri.qs': '/path?time=now',
+        'k': 'v',
+        'response_status_code': str(response.status_code),
+    }
     assert annotations == expected
 
     # Try it again with no callback specified

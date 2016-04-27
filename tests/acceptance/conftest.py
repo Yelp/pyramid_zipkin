@@ -40,7 +40,17 @@ def uri_qs_binary_annotation(host):
 
 
 @pytest.fixture
-def get_span(annotation, uri_binary_annotation, uri_qs_binary_annotation):
+def response_status_code_annotation(host):
+    return {'key': 'response_status_code', 'host': host, 'annotation_type': 6}
+
+
+@pytest.fixture
+def get_span(
+    annotation,
+    uri_binary_annotation,
+    uri_qs_binary_annotation,
+    response_status_code_annotation,
+):
     sr_annotation = annotation.copy()
     sr_annotation['value'] = 'sr'
 
@@ -50,14 +60,21 @@ def get_span(annotation, uri_binary_annotation, uri_qs_binary_annotation):
     uri_binary_annotation['value'] = '/sample'
     uri_qs_binary_annotation['value'] = '/sample'
 
+    response_status_code_annotation['value'] = '200'
+
     return {'debug': False,
             'id': 1,
             'parent_id': None,
             'duration': None,
             'timestamp': None,
-            'annotations': sorted([sr_annotation, ss_annotation],
-                                  key=lambda ann: ann['value']),
-            'binary_annotations': [uri_binary_annotation,
-                                   uri_qs_binary_annotation],
+            'annotations': sorted(
+                [sr_annotation, ss_annotation],
+                key=lambda ann: ann['value'],
+            ),
+            'binary_annotations': [
+                uri_binary_annotation,
+                uri_qs_binary_annotation,
+                response_status_code_annotation,
+            ],
             'name': 'GET /sample',
             }
