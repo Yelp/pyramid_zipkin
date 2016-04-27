@@ -94,3 +94,10 @@ def test_binary_annotation_list_builder(bann_mock):
     bann_mock.assert_any_call('key1', 'val1', 6, 'host')
     bann_mock.assert_any_call('key2', 'val2', 6, 'host')
     assert bann_mock.call_count == 2
+
+
+def test_binary_annotation_list_builder_with_nonstring_values():
+    bann_list = {'test key': 5}
+    banns = thrift_helper.binary_annotation_list_builder(bann_list, 'host')
+    assert banns[0].key == 'test key'
+    assert banns[0].value == '5'

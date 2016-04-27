@@ -108,9 +108,10 @@ def binary_annotation_list_builder(binary_annotations, host):
     """
     # TODO: Remove the type hard-coding of STRING to take it as a param option.
     ann_type = zipkin_core.AnnotationType.STRING
-    return [create_binary_annotation(
-        key, value, ann_type, host)
-        for key, value in binary_annotations.items()]
+    return [
+        create_binary_annotation(key, str(value), ann_type, host)
+        for key, value in binary_annotations.items()
+    ]
 
 
 def create_span(
