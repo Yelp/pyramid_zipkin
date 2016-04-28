@@ -47,23 +47,18 @@ class ZipkinLoggingContext(object):
 
     def __exit__(self, _type, _value, _traceback):
         """Actions to be taken post request handling.
-        1) Log the service annotations to scribe
+        1) Log the service annotations to scribe.
         2) Detach `zipkin_logger` handler.
         """
         self.log_spans()
         zipkin_logger.removeHandler(self.handler)
-
-    def is_response_success(self):
-        """Returns a boolean whether the response was a success
-        """
-        return 200 <= self.response_status_code <= 299
 
     def log_spans(self):
         """Main function to log all the annotations stored during the entire
         request. This is done if the request is sampled and the response was
         a success. It also logs the service `ss` and `sr` annotations.
         """
-        if self.zipkin_attrs.is_sampled and self.is_response_success():
+        if self.zipkin_attrs.is_sampled:
             # Collect additional annotations from the logging handler
             annotations_by_span_id = defaultdict(dict)
             binary_annotations_by_span_id = defaultdict(dict)
@@ -251,7 +246,11 @@ def get_binary_annotations(request, response):
     :param response: the Pyramid response object
     :returns: binary annotation dict of {str: str}
     """
-    annotations = {'http.uri': request.path, 'http.uri.qs': request.path_qs}
+    annotations = {
+        'http.uri': request.path,
+        'http.uri.qs': request.path_qs,
+        'response_status_code': str(response.status_code),
+    }
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:
         annotations.update(
