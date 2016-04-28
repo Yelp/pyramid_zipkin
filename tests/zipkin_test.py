@@ -76,7 +76,7 @@ def test_create_headers_for_new_span_returns_header_if_active_request(
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.push_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-def test_span_text_no_zipkin_attrs(
+def test_span_context_no_zipkin_attrs(
     get_zipkin_attrs_mock,
     push_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
@@ -93,7 +93,7 @@ def test_span_text_no_zipkin_attrs(
 @mock.patch('pyramid_zipkin.zipkin.pop_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.push_zipkin_attrs', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.get_zipkin_attrs', autospec=True)
-def test_span_text_not_sampled(
+def test_span_context_not_sampled(
     get_zipkin_attrs_mock,
     push_zipkin_attrs_mock,
     pop_zipkin_attrs_mock,
@@ -114,7 +114,32 @@ def test_span_text_not_sampled(
 @mock.patch('pyramid_zipkin.thread_local._thread_local', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
 @mock.patch('pyramid_zipkin.zipkin.zipkin_logger', autospec=True)
-def test_span_text(
+def test_span_context_sampled_no_handlers(
+    zipkin_logger_mock,
+    generate_string_mock,
+    thread_local_mock,
+):
+    zipkin_attrs = ZipkinAttrs(
+        'trace_id', 'span_id', 'parent_span_id', 'flags', True)
+    thread_local_mock.requests = [zipkin_attrs]
+
+    zipkin_logger_mock.handlers = []
+    generate_string_mock.return_value = '1'
+
+    context = zipkin.SpanContext('svc', 'span')
+    with context:
+        # Assert that the new ZipkinAttrs were saved
+        new_zipkin_attrs = get_zipkin_attrs()
+        assert new_zipkin_attrs.span_id == '1'
+
+    # Outside of the context, things should be returned to normal
+    assert get_zipkin_attrs() == zipkin_attrs
+
+
+@mock.patch('pyramid_zipkin.thread_local._thread_local', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.generate_random_64bit_string', autospec=True)
+@mock.patch('pyramid_zipkin.zipkin.zipkin_logger', autospec=True)
+def test_span_context(
     zipkin_logger_mock,
     generate_string_mock,
     thread_local_mock,

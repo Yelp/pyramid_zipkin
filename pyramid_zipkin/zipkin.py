@@ -118,6 +118,7 @@ class SpanContext(object):
         self.span_name = span_name
         self.annotations = annotations or {}
         self.binary_annotations = binary_annotations or {}
+        self.logging_initialized = False
 
     def __enter__(self):
         """Enter the new span context. All spans/annotations logged inside this
@@ -152,25 +153,31 @@ class SpanContext(object):
             self.do_pop_attrs = True
         # In the sampled case, patch the ZipkinLoggerHandler.
         if self.is_sampled:
-            # Put span ID on logging handler. Assume there's only a single
-            # handler, since all logging should be set up in this package.
-            self.handler = zipkin_logger.handlers[0]
-            # Store the old parent_span_id, probably None, in case we have
-            # nested SpanContexts
-            self.old_parent_span_id = self.handler.parent_span_id
-            self.handler.parent_span_id = self.span_id
+            # Be defensive about logging setup. Since ZipkinAttrs are local
+            # the a thread, multithreaded frameworks can get in strange states.
+            # The logging is not going to be correct in these cases, so we set
+            # a flag that turns off logging on __exit__.
+            if len(zipkin_logger.handlers) > 0:
+                # Put span ID on logging handler. Assume there's only a single
+                # handler, since all logging should be set up in this package.
+                self.handler = zipkin_logger.handlers[0]
+                # Store the old parent_span_id, probably None, in case we have
+                # nested SpanContexts
+                self.old_parent_span_id = self.handler.parent_span_id
+                self.handler.parent_span_id = self.span_id
+                self.logging_initialized = True
 
         return self
 
     def __exit__(self, _exc_type, _exc_value, _exc_traceback):
         """Exit the span context. The new zipkin attrs are pushed onto the
         threadlocal stack regardless of sampling, so they always need to be
-        popped off. The actual logging of spans depends on sampling.
+        popped off. The actual logging of spans depends on sampling and that
+        the logging was correctly set up.
         """
-        # Pop off zipkin attrs if they got pushed on in the first place
         if self.do_pop_attrs:
             pop_zipkin_attrs()
-        if not self.is_sampled:
+        if not (self.is_sampled and self.logging_initialized):
             return
 
         end_timestamp = time.time()
