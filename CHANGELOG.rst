@@ -1,3 +1,11 @@
+0.11.1 (2016-04-28)
+-------------------
+- Binary annotation values are converted to str
+- Removed restriction where only successful status codes are logged
+- Added status code as a default binary annotation
+- Prevent errors when ZipkinAttrs doesn't exist (usually in multithreaded environments)
+- pyramid-zipkin is a pure python package
+
 0.11.0 (2016-04-19)
 -------------------
 - Renames ClientSpanContext to SpanContext, adds 'ss' and 'sr' annotations.
