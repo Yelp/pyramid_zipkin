@@ -11,8 +11,16 @@ from pyramid_zipkin.thrift_helper import copy_endpoint_with_new_service_name
 from pyramid_zipkin.thrift_helper import create_span
 from pyramid_zipkin.thrift_helper import thrift_obj_in_bytes
 
+try:  # Python 2.7+
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
 
+null_handler = NullHandler()
 zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
+zipkin_logger.addHandler(null_handler)
 zipkin_logger.setLevel(logging.DEBUG)
 
 
@@ -41,6 +49,7 @@ class ZipkinLoggingContext(object):
         1) Attach `zipkin_logger` to :class:`ZipkingLoggerHandler` object.
         2) Record the start timestamp.
         """
+        zipkin_logger.removeHandler(null_handler)
         zipkin_logger.addHandler(self.handler)
         self.start_timestamp = time.time()
         return self
@@ -52,6 +61,7 @@ class ZipkinLoggingContext(object):
         """
         self.log_spans()
         zipkin_logger.removeHandler(self.handler)
+        zipkin_logger.addHandler(null_handler)
 
     def log_spans(self):
         """Main function to log all the annotations stored during the entire
