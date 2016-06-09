@@ -9,10 +9,9 @@ from tests.acceptance import test_helper
 from pyramid_zipkin.thrift_helper import unsigned_hex_to_signed_int
 
 
-#This test _must_ be the first test in this file
+# This test _must_ be the first test in this file
 def test_zipkin_doesnt_spew_on_first_log(capfd):
     import logging
-    from pyramid_zipkin import zipkin
 
     zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
 
