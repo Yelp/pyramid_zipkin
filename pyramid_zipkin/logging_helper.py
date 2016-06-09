@@ -13,7 +13,7 @@ from pyramid_zipkin.thrift_helper import thrift_obj_in_bytes
 
 try:  # Python 2.7+
     from logging import NullHandler
-except ImportError:
+except ImportError: # pragma: no cover
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
