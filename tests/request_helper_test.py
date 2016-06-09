@@ -130,7 +130,7 @@ def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(mock, request):
         'X-B3-SpanId': '23',
         'X-B3-ParentSpanId': '34',
         'X-B3-Flags': '45',
-        }
+    }
     zipkin_attr = request_helper.ZipkinAttrs(
         trace_id='12', span_id='23', parent_span_id='34', flags='45',
         is_sampled='bla')

@@ -106,8 +106,10 @@ def test_span_context(
     assert_extra_annotations(server_span, {'server_annotation': 1000000})
     assert_extra_binary_annotations(server_span, {'server': 'true'})
     assert_extra_annotations(child_span, {'child_annotation': 1000000})
-    assert_extra_binary_annotations(child_span, {'foo': 'bar', 'child': 'true'})
-    assert_extra_annotations(grandchild_span, {'grandchild_annotation': 1000000})
+    assert_extra_binary_annotations(
+        child_span, {'foo': 'bar', 'child': 'true'})
+    assert_extra_annotations(
+        grandchild_span, {'grandchild_annotation': 1000000})
     assert_extra_binary_annotations(grandchild_span, {'grandchild': 'true'})
 
     # For the span produced by SpanContext, assert cs==sr and ss==cr

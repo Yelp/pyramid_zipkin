@@ -45,7 +45,8 @@ def get_trace_id(request):
     if 'X-B3-TraceId' in request.headers:
         trace_id = request.headers['X-B3-TraceId']
     elif 'zipkin.trace_id_generator' in request.registry.settings:
-        trace_id = request.registry.settings['zipkin.trace_id_generator'](request)
+        trace_id = request.registry.settings[
+            'zipkin.trace_id_generator'](request)
     else:
         trace_id = generate_random_64bit_string()
 
@@ -154,7 +155,8 @@ def create_zipkin_attr(request):
 
     trace_id = request.zipkin_trace_id
     is_sampled = is_tracing(request)
-    span_id = request.headers.get('X-B3-SpanId', generate_random_64bit_string())
+    span_id = request.headers.get(
+        'X-B3-SpanId', generate_random_64bit_string())
     parent_span_id = request.headers.get('X-B3-ParentSpanId', None)
     flags = request.headers.get('X-B3-Flags', '0')
     return ZipkinAttrs(

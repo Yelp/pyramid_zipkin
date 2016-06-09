@@ -69,7 +69,7 @@ def test_create_headers_for_new_span_returns_header_if_active_request(
         'X-B3-ParentSpanId': '37133d482ba4f605',
         'X-B3-Flags': '0',
         'X-B3-Sampled': '1',
-        }
+    }
     assert expected == zipkin.create_headers_for_new_span()
 
 

@@ -16,8 +16,8 @@ setup(
     url="https://github.com/Yelp/pyramid_zipkin",
     description='Zipkin distributed tracing system support library for pyramid.',
     packages=find_packages(exclude=('tests*', 'testing*', 'tools*')),
-    package_data = { '': [ '*.thrift' ] },
-    install_requires = [
+    package_data={'': ['*.thrift']},
+    install_requires=[
         'pyramid',
         'six',
         'thriftpy',
