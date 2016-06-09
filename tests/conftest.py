@@ -5,7 +5,7 @@ from pyramid_zipkin import request_helper
 
 
 @pytest.fixture
-def request():
+def dummy_request():
     request = mock.Mock()
     request.registry.settings = {}
     request.headers = {}

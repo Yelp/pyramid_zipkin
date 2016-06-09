@@ -12,12 +12,12 @@ zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
 
 
 @view_config(route_name='sample_route', renderer='json')
-def sample(request):
+def sample(dummy_request):
     return {}
 
 
 @view_config(route_name='sample_route_v2', renderer='json')
-def sample_v2(request):
+def sample_v2(dummy_request):
     zipkin_logger.debug({
         'annotations': {'foo': 2},
         'binary_annotations': {'ping': 'pong'},
@@ -28,7 +28,7 @@ def sample_v2(request):
 
 
 @view_config(route_name='sample_route_v2_client', renderer='json')
-def sample_v2_client(request):
+def sample_v2_client(dummy_request):
     zipkin_logger.debug({
         'annotations': {'foo_client': 2},
         'name': 'v2_client',
@@ -43,7 +43,7 @@ def sample_v2_client(request):
 
 
 @view_config(route_name='span_context', renderer='json')
-def span_context(request):
+def span_context(dummy_request):
     # These annotations should go to the server span
     zipkin_logger.debug({
         'annotations': {'server_annotation': 1},
@@ -70,19 +70,19 @@ def span_context(request):
 
 
 @view_config(route_name='sample_route_child_span', renderer='json')
-def sample_child_span(request):
+def sample_child_span(dummy_request):
     return zipkin.create_headers_for_new_span()
 
 
 @view_config(route_name='server_error', renderer='json')
-def server_error(request):
+def server_error(dummy_request):
     response = Response('Server Error!')
     response.status_int = 500
     return response
 
 
 @view_config(route_name='client_error', renderer='json')
-def client_error(request):
+def client_error(dummy_request):
     response = Response('Client Error!')
     response.status_int = 400
     return response
