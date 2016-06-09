@@ -11,5 +11,6 @@
     -   id: name-tests-test
         exclude: tests/acceptance/test_helper.py
     -   id: flake8
+        args: ['--max-line-length=82']
         exclude: docs/source/conf.py
     -   id: requirements-txt-fixer
