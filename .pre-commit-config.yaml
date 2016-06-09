@@ -9,6 +9,7 @@
     -   id: check-yaml
     -   id: debug-statements
     -   id: name-tests-test
+        exclude: tests/acceptance/test_helper.py
     -   id: flake8
         exclude: docs/source/conf.py
     -   id: requirements-txt-fixer
