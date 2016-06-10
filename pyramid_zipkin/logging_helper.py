@@ -100,8 +100,7 @@ class ZipkinLoggingContext(object):
                 annotations = span['annotations']
                 annotations.update(annotations_by_span_id[span_id])
                 binary_annotations = span['binary_annotations']
-                binary_annotations.update(
-                    binary_annotations_by_span_id[span_id])
+                binary_annotations.update(binary_annotations_by_span_id[span_id])
                 # Create serializable thrift objects of annotations
                 thrift_annotations = annotation_list_builder(
                     annotations, endpoint
@@ -121,8 +120,7 @@ class ZipkinLoggingContext(object):
                 )
 
             # Collect extra annotations for server span, then log it.
-            extra_annotations = annotations_by_span_id[
-                self.zipkin_attrs.span_id]
+            extra_annotations = annotations_by_span_id[self.zipkin_attrs.span_id]
             extra_binary_annotations = binary_annotations_by_span_id[
                 self.zipkin_attrs.span_id
             ]
@@ -144,8 +142,7 @@ class ZipkinLoggingContext(object):
                 self.thrift_endpoint,
             )
 
-            span_name = "{0} {1}".format(
-                self.request_method, self.request_path)
+            span_name = "{0} {1}".format(self.request_method, self.request_path)
             log_span(
                 span_id=self.zipkin_attrs.span_id,
                 parent_span_id=self.zipkin_attrs.parent_span_id,
@@ -268,7 +265,8 @@ def get_binary_annotations(request, response):
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:
         annotations.update(
-            settings['zipkin.set_extra_binary_annotations'](request, response))
+            settings['zipkin.set_extra_binary_annotations'](request, response)
+        )
     return annotations
 
 
@@ -295,4 +293,5 @@ def log_span(
         raise ZipkinError(
             "`zipkin.transport_handler` is a required config property, which"
             " is missing. It is a callback method which takes stream_name and"
-            " a message as the params and logs message via scribe/kafka.")
+            " a message as the params and logs message via scribe/kafka."
+        )
