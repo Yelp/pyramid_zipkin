@@ -55,7 +55,7 @@ def zipkin_tween(handler, registry):
                 response = handler(request)
                 context.response_status_code = response.status_code
                 context.binary_annotations_dict = get_binary_annotations(
-                        request, response)
+                    request, response)
 
                 return response
         finally:
@@ -102,6 +102,7 @@ class SpanContext(object):
     context. Outside this context, the proper logging handlers will
     not be set up.
     """
+
     def __init__(
         self, service_name, span_name='span',
         annotations=None, binary_annotations=None,

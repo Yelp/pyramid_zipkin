@@ -26,6 +26,7 @@ class ZipkinLoggingContext(object):
     :type log_handler: :class:`pyramid_zipkin.logging_helper.ZipkinLoggerHandler`
     :param request: active pyramid request object
     """
+
     def __init__(self, zipkin_attrs, thrift_endpoint, log_handler, request):
         self.zipkin_attrs = zipkin_attrs
         self.thrift_endpoint = thrift_endpoint
@@ -88,7 +89,8 @@ class ZipkinLoggingContext(object):
                 annotations = span['annotations']
                 annotations.update(annotations_by_span_id[span_id])
                 binary_annotations = span['binary_annotations']
-                binary_annotations.update(binary_annotations_by_span_id[span_id])
+                binary_annotations.update(
+                    binary_annotations_by_span_id[span_id])
                 # Create serializable thrift objects of annotations
                 thrift_annotations = annotation_list_builder(
                     annotations, endpoint
@@ -108,7 +110,8 @@ class ZipkinLoggingContext(object):
                 )
 
             # Collect extra annotations for server span, then log it.
-            extra_annotations = annotations_by_span_id[self.zipkin_attrs.span_id]
+            extra_annotations = annotations_by_span_id[
+                self.zipkin_attrs.span_id]
             extra_binary_annotations = binary_annotations_by_span_id[
                 self.zipkin_attrs.span_id
             ]

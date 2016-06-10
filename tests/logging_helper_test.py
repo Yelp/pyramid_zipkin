@@ -238,7 +238,8 @@ def test_log_span_uses_default_stream_name_if_not_provided(thrift_obj, create_sp
         '0000000000000002', '0000000000000001', '00000000000000015',
         'span', 'ann', 'binary_ann', registry
     )
-    transport_handler.assert_called_once_with('zipkin', thrift_obj.return_value)
+    transport_handler.assert_called_once_with(
+        'zipkin', thrift_obj.return_value)
 
 
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)

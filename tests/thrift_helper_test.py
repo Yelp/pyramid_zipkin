@@ -42,7 +42,7 @@ def test_copy_endpoint_with_new_service_name(gethostbyname, request):
     request.server_port = 8080
     endpoint = thrift_helper.create_endpoint(request)
     new_endpoint = thrift_helper.copy_endpoint_with_new_service_name(
-            endpoint, 'blargh')
+        endpoint, 'blargh')
     assert new_endpoint.port == 8080
     assert new_endpoint.service_name == 'blargh'
     # An IP address of 0.0.0.0 unpacks to just 0
