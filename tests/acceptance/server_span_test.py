@@ -9,23 +9,6 @@ from tests.acceptance import test_helper
 from pyramid_zipkin.thrift_helper import unsigned_hex_to_signed_int
 
 
-# This test _must_ be the first test in this file
-def test_zipkin_doesnt_spew_on_first_log(capfd):
-    import logging
-
-    zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
-
-    zipkin_logger.debug({
-        'annotations': {'foo': 2},
-        'name': 'bar',
-    })
-
-    out, err = capfd.readouterr()
-
-    assert not err
-    assert not out
-
-
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_sample_server_span_with_100_percent_tracing(
         thrift_obj, default_trace_id_generator, get_span):
