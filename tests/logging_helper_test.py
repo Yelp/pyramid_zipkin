@@ -7,6 +7,23 @@ from pyramid_zipkin.exception import ZipkinError
 from pyramid_zipkin.request_helper import ZipkinAttrs
 
 
+# This test _must_ be the first test in this file
+def test_zipkin_doesnt_spew_on_first_log(capfd):
+    import logging
+
+    zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
+
+    zipkin_logger.debug({
+        'annotations': {'foo': 2},
+        'name': 'bar',
+    })
+
+    out, err = capfd.readouterr()
+
+    assert not err
+    assert not out
+
+
 @pytest.fixture
 def context():
     attr = ZipkinAttrs(None, None, None, None, False)
@@ -27,7 +44,8 @@ def test_zipkin_logging_context(time_mock, mock_logger, context):
             mock_logger.addHandler.assert_called_once_with(context.handler)
             assert context.start_timestamp == 42
         # Make sure the handler and the zipkin attrs are gone
-        mock_logger.removeHandler.assert_called_once_with(context.handler)
+        mock_logger.removeHandler.assert_called_with(context.handler)
+        assert mock_logger.removeHandler.call_count == 2
         assert context.log_spans.call_count == 1
 
 
@@ -239,7 +257,8 @@ def test_log_span_uses_default_stream_name_if_not_provided(thrift_obj, create_sp
         'span', 'ann', 'binary_ann', registry
     )
     transport_handler.assert_called_once_with(
-        'zipkin', thrift_obj.return_value)
+        'zipkin', thrift_obj.return_value
+    )
 
 
 @mock.patch('pyramid_zipkin.logging_helper.create_span', autospec=True)
