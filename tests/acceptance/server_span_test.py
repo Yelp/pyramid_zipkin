@@ -116,8 +116,8 @@ def test_server_extra_annotations_are_included(
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_binary_annotations(thrift_obj, default_trace_id_generator):
-    def set_extra_binary_annotations(request, response):
-        return {'other': request.registry.settings['other_attr']}
+    def set_extra_binary_annotations(dummy_request, response):
+        return {'other': dummy_request.registry.settings['other_attr']}
 
     settings = {
         'zipkin.tracing_percent': 100,
