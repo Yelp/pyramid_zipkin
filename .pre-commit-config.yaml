@@ -13,4 +13,5 @@
     -   id: flake8
         args: ['--max-line-length=82']
         exclude: docs/source/conf.py
+        args: ['--max-line-length=82']
     -   id: requirements-txt-fixer
