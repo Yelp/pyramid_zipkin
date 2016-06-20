@@ -122,3 +122,26 @@ def test_span_context(
             annotations[annotation.value] = annotation.timestamp
     assert annotations['cs'] == annotations['sr']
     assert annotations['ss'] == annotations['cr']
+
+
+@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_decorator(
+    thrift_obj,
+    sampled_trace_id_generator
+):
+    # Tests that log lines with 'service_name' keys are logged as
+    # new client spans.
+    settings = {
+        'zipkin.trace_id_generator': sampled_trace_id_generator,
+    }
+
+    TestApp(main({}, **settings)).get('/decorator_context', status=200)
+
+    # Two spans are logged - child span, then server span
+    child_span_args, server_span_args = thrift_obj.call_args_list
+    child_span = child_span_args[0][0]
+    server_span = server_span_args[0][0]
+    # Assert proper hierarchy and annotations
+    assert child_span.parent_id == server_span.id
+    assert_extra_binary_annotations(child_span, {'a': '1'})
+    assert child_span.name == 'my_span'

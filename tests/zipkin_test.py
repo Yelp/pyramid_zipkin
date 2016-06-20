@@ -188,3 +188,24 @@ def test_span_context(
         'binary_annotations': {'foo': 'bar'},
     }
     assert client_span == expected_client_span
+
+
+@mock.patch('pyramid_zipkin.zipkin.SpanContext', autospec=True)
+def test_decorator(mock_span_context):
+
+    service_name = 'my_service'
+    span_name = 'my_span'
+    binary_annotations = {'a': '1'}
+
+    @zipkin.zipkin_span(service_name, span_name, binary_annotations)
+    def some_function(a, b):
+        return a + b
+
+    assert some_function(1, 2) == 3
+
+    expected_call = mock.call(
+        service_name=service_name,
+        span_name=span_name,
+        binary_annotations=binary_annotations,
+    )
+    assert expected_call == mock_span_context.call_args

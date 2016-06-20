@@ -199,3 +199,38 @@ class SpanContext(object):
             binary_annotations=self.binary_annotations,
             span_id=self.span_id,
         )
+
+
+def zipkin_span(
+    service_name,
+    span_name,
+    binary_annotations=None,
+):
+    """Decorator utility for logging a function as a Zipkin span.
+    Note that the decorator doesn't accept timestamp annotations.
+    Any timestamps included in the decorator would likely be way off,
+    as they wouldn't be able to be dependent on request time.
+
+    Usage:
+
+    @zipkin_span('my_service', 'my_span_name')
+    def my_funky_function(a, b):
+        return a + b
+
+    :param service_name: Name of the "service" for the to-be-logged span
+    :type service_name: string
+    :param span_name: Name of the span to be logged.
+    :type span_name: string
+    :param binary_annotations: Additional span binary annotations
+    :type binary_annotations: dict of str -> str
+    """
+    def outer(func):
+        def inner(*args, **kwargs):
+            with SpanContext(
+                service_name=service_name,
+                span_name=span_name,
+                binary_annotations=binary_annotations,
+            ):
+                return func(*args, **kwargs)
+        return inner
+    return outer
