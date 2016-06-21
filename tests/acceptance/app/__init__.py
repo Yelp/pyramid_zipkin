@@ -69,6 +69,16 @@ def span_context(dummy_request):
     return {}
 
 
+@view_config(route_name='decorator_context', renderer='json')
+def decorator_context(dummy_request):
+
+    @zipkin.zipkin_span('my_service', 'my_span', binary_annotations={'a': '1'})
+    def some_function(a, b):
+        return str(a + b)
+
+    return {'result': some_function(1, 2)}
+
+
 @view_config(route_name='sample_route_child_span', renderer='json')
 def sample_child_span(dummy_request):
     return zipkin.create_headers_for_new_span()
@@ -100,6 +110,7 @@ def main(global_config, **settings):
     config.add_route('sample_route_v2_client', '/sample_v2_client')
     config.add_route('sample_route_child_span', '/sample_child_span')
     config.add_route('span_context', '/span_context')
+    config.add_route('decorator_context', '/decorator_context')
 
     config.add_route('server_error', '/server_error')
     config.add_route('client_error', '/client_error')
