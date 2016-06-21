@@ -1,3 +1,7 @@
+0.12.0 (2016-06-21)
+-------------------
+- Add @zipkin_span decorator for logging functions as spans
+
 0.11.1 (2016-04-28)
 -------------------
 - Binary annotation values are converted to str
