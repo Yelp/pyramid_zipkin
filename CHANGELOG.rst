@@ -1,4 +1,4 @@
-0.12.0 (2016-06-21)
+0.12.1 (2016-07-08)
 -------------------
 - Add @zipkin_span decorator for logging functions as spans
 
