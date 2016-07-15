@@ -50,7 +50,7 @@ def create_endpoint(request):
     :param request: pyramid request object
     :returns: zipkin endpoint object
     """
-    service_name = request.registry.settings['service_name']
+    service_name = request.registry.settings.get('service_name', 'unknown')
     host = socket.gethostbyname(socket.gethostname())
     port = request.server_port
 

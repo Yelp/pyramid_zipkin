@@ -1,3 +1,7 @@
+0.12.2 (2016-07-15)
+-------------------
+- make "service_name" default to "unknown" when not found in registry
+
 0.12.1 (2016-07-08)
 -------------------
 - Add @zipkin_span decorator for logging functions as spans

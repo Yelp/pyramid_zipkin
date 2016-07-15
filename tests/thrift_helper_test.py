@@ -36,6 +36,17 @@ def test_create_endpoint_creates_correct_endpoint(gethostbyname, dummy_request):
 
 
 @mock.patch('socket.gethostbyname', autospec=True)
+def test_create_endpoint_defaults_service_name(gethostbyname, dummy_request):
+    gethostbyname.return_value = '0.0.0.0'
+    dummy_request.server_port = 8080
+    endpoint = thrift_helper.create_endpoint(dummy_request)
+    assert endpoint.service_name == 'unknown'
+    assert endpoint.port == 8080
+    # An IP address of 0.0.0.0 unpacks to just 0
+    assert endpoint.ipv4 == 0
+
+
+@mock.patch('socket.gethostbyname', autospec=True)
 def test_copy_endpoint_with_new_service_name(gethostbyname, dummy_request):
     gethostbyname.return_value = '0.0.0.0'
     dummy_request.registry.settings = {'service_name': 'foo'}
