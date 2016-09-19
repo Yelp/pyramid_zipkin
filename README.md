@@ -6,8 +6,9 @@
 pyramid_zipkin
 --------------
 
-This project acts as a [Pyramid](http://docs.pylonsproject.org/en/latest/docs/pyramid.html)
-tween to facilitate creation of [zipkin](https://github.com/openzipkin/zipkin/wiki) service spans.
+This project provides [Zipkin](https://github.com/openzipkin/zipkin/wiki) instrumentation
+for the [Pyramid](http://docs.pylonsproject.org/en/latest/docs/pyramid.html) framework by
+using [py_zipkin](https://github.com/Yelp/py_zipkin) under the hood.
 
 Full documentation [here](http://pyramid-zipkin.readthedocs.org/en/latest/).
 
@@ -17,9 +18,7 @@ Features include:
 
 * `zipkin_tracing_percent` to control the percentage of requests getting sampled.
 
-* API `create_headers_for_new_span` to generate new client headers.
-
-* Creates `http.uri` binary annotation automatically for each trace.
+* Creates `http.uri`, `http.uri.qs`, and `status_code` binary annotations automatically for each trace.
 
 Install
 -------

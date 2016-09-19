@@ -1,6 +1,9 @@
 0.13.0 (2016-09-12)
 -------------------
 - Moved non-pyramid and zipkin-only code to py_zipkin package
+- 'zipkin.transport_handler' now only takes a single message parameter
+- `create_headers_for_new_span` is moved to py_zipkin and renamed to
+  `create_http_headers_for_new_span`
 
 0.12.3 (2016-07-27)
 -------------------
