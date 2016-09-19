@@ -6,8 +6,8 @@ Required configuration settings
 
 zipkin.transport_handler
 ~~~~~~~~~~~~~~~~~~~~~~~~
-    A callback function which takes two parameters, the `stream name` and the
-    `message data`. A sample method can be something like this:
+    A callback function which takes a single `message data` parameter.
+    A sample method can be something like this:
 
     A) FOR `kafka` TRANSPORT:
 
@@ -15,11 +15,11 @@ zipkin.transport_handler
 
         from kafka import SimpleProducer, KafkaClient
 
-        def kafka_handler(stream_name, message):
+        def kafka_handler(message):
 
             kafka = KafkaClient('{0}:{1}'.format('localhost', 9092))
             producer = SimpleProducer(kafka, async=True)
-            producer.send_messages(stream_name, message)
+            producer.send_messages('some_stream_name', message)
 
     The above example uses python package `kafka-python <https://pypi.python.org/pypi/kafka-python>`_.
 
@@ -32,7 +32,7 @@ zipkin.transport_handler
         from thrift.transport import TTransport, TSocket
         from thrift.protocol import TBinaryProtocol
 
-        def scribe_handler(stream_name, message):
+        def scribe_handler(message):
             socket = TSocket.TSocket(host="HOST", port=9999)
             transport = TTransport.TFramedTransport(socket)
             protocol = TBinaryProtocol.TBinaryProtocol(
@@ -41,7 +41,7 @@ zipkin.transport_handler
             transport.open()
 
             message_b64 = base64.b64encode(message).strip()
-            log_entry = scribe.LogEntry(stream_name, message_b64)
+            log_entry = scribe.LogEntry('some_stream_name', message_b64)
             result = client.Log(messages=[log_entry])
             if result == 0:
               print 'success'
@@ -50,10 +50,6 @@ zipkin.transport_handler
     `facebook-scribe <https://pypi.python.org/pypi/facebook-scribe/>`_
     for the scribe APIs but any similar package can do the work.
 
-service_name
-~~~~~~~~~~~~~~~
-    A string representing the name of the service under instrumentation.
-
 
 Optional configuration settings
 -------------------------------
@@ -61,10 +57,10 @@ Optional configuration settings
 All below settings are optional and have a sane default functionality set.
 These can be used to fine tune as per your use case.
 
-zipkin.stream_name
-~~~~~~~~~~~~~~~~~~
-    The `stream_name` the message will be logged to via transport layer.
-    It defaults to `zipkin`.
+service_name
+~~~~~~~~~~~~~~~
+    A string representing the name of the service under instrumentation.
+    It defaults to `unknown`.
 
 
 zipkin.blacklisted_paths
@@ -142,4 +138,4 @@ These settings can be added at Pyramid application setup like so:
             settings['zipkin.set_extra_binary_annotations'] = lambda req, resp: {'attr': str(req.attr)}
             # ...and so on with the other settings...
             config = Configurator(settings=settings)
-            config.include('zipkin')
+            config.include('pyramid_zipkin')

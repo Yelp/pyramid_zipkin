@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 import mock
+import pytest
 import time
 
 from webtest import TestApp
 
 from .app import main
 from tests.acceptance import test_helper
-from pyramid_zipkin.thrift_helper import unsigned_hex_to_signed_int
+from py_zipkin.exception import ZipkinError
+from py_zipkin.util import unsigned_hex_to_signed_int
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_sample_server_span_with_100_percent_tracing(
         thrift_obj, default_trace_id_generator, get_span):
     settings = {
@@ -40,7 +42,7 @@ def test_sample_server_span_with_100_percent_tracing(
     assert thrift_obj.call_count == 1
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_sample_server_span_with_specific_trace_id_which_samples(
         thrift_obj, sampled_trace_id_generator):
     settings = {
@@ -52,7 +54,7 @@ def test_sample_server_span_with_specific_trace_id_which_samples(
     assert thrift_obj.call_count == 1
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
@@ -64,7 +66,7 @@ def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_blacklisted_route_has_no_span(thrift_obj, sampled_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
@@ -77,7 +79,7 @@ def test_blacklisted_route_has_no_span(thrift_obj, sampled_trace_id_generator):
     assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_blacklisted_path_has_no_span(thrift_obj, sampled_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
@@ -90,7 +92,16 @@ def test_blacklisted_path_has_no_span(thrift_obj, sampled_trace_id_generator):
     assert thrift_obj.call_count == 0
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_no_transport_handler_throws_error():
+    app_main = main({})
+    del app_main.registry.settings['zipkin.transport_handler']
+    assert 'zipkin.transport_handler' not in app_main.registry.settings
+
+    with pytest.raises(ZipkinError):
+        TestApp(app_main).get('/sample', status=200)
+
+
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_server_extra_annotations_are_included(
     thrift_obj,
     sampled_trace_id_generator
@@ -114,7 +125,7 @@ def test_server_extra_annotations_are_included(
     )
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_binary_annotations(thrift_obj, default_trace_id_generator):
     def set_extra_binary_annotations(dummy_request, response):
         return {'other': dummy_request.registry.settings['other_attr']}

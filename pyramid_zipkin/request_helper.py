@@ -1,37 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import codecs
-import os
 import re
-import struct
-from collections import namedtuple
 
 import six
 from pyramid.interfaces import IRoutesMapper
+from py_zipkin.zipkin import ZipkinAttrs
+from py_zipkin.util import generate_random_64bit_string
 
 
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5
-
-
-class ZipkinAttrs(namedtuple(
-        'ZipkinAttrs', 'trace_id span_id parent_span_id flags is_sampled')):
-    """
-    Holds the basic attributes needed to log a zipkin trace
-
-    :param trace_id: Unique trace id
-    :param span_id: Span Id of the current request span
-    :param parent_span_id: Parent span Id of the current request span
-    :param flags: stores flags header. Currently unused
-    :param is_sampled: pre-computed boolean whether the trace should be logged
-    """
-
-
-def generate_random_64bit_string():
-    """Returns a 64 bit UTF-8 encoded string. In the interests of simplicity,
-    this is always cast to a `str` instead of (in py2 land) a unicode string.
-    Certain clients (I'm looking at you, Twisted) don't enjoy unicode headers.
-    """
-    return str(codecs.encode(os.urandom(8), 'hex_codec').decode('utf-8'))
 
 
 def get_trace_id(request):
@@ -50,25 +27,7 @@ def get_trace_id(request):
     else:
         trace_id = generate_random_64bit_string()
 
-    # Backwards compatibility for <=v0.8.1
-    # If the trace id is a hex value that starts with '0x' or '-0x',
-    # convert to the unsigned form before proceeding.
-    if trace_id.startswith('0x') or trace_id.startswith('-0x'):
-        trace_id = _signed_hex_to_unsigned_hex(trace_id)
-    trace_id = trace_id.zfill(16)
-
     return trace_id
-
-
-def _signed_hex_to_unsigned_hex(s):
-    """Takes a signed hex string that begins with '0x' and converts it to
-    a 16-character string representing an unsigned hex value.
-
-    Examples:
-        '0xd68adf75f4cfd13' => 'd68adf75f4cfd13'
-        '-0x3ab5151d76fb85e1' => 'c54aeae289047a1f'
-    """
-    return '{0:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
 
 
 def should_not_sample_path(request):
@@ -166,3 +125,23 @@ def create_zipkin_attr(request):
         flags=flags,
         is_sampled=is_sampled,
     )
+
+
+def get_binary_annotations(request, response):
+    """Helper method for getting all binary annotations from the request.
+
+    :param request: the Pyramid request object
+    :param response: the Pyramid response object
+    :returns: binary annotation dict of {str: str}
+    """
+    annotations = {
+        'http.uri': request.path,
+        'http.uri.qs': request.path_qs,
+        'response_status_code': str(response.status_code),
+    }
+    settings = request.registry.settings
+    if 'zipkin.set_extra_binary_annotations' in settings:
+        annotations.update(
+            settings['zipkin.set_extra_binary_annotations'](request, response)
+        )
+    return annotations

@@ -1,3 +1,7 @@
+0.13.0 (2016-09-12)
+-------------------
+- Moved non-pyramid and zipkin-only code to py_zipkin package
+
 0.12.3 (2016-07-27)
 -------------------
 - Fix coverage command invocation to be compatible with coverage v4.2
