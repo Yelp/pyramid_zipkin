@@ -3,8 +3,8 @@ import logging
 
 from pyramid.config import Configurator
 from pyramid.response import Response
-from pyramid.view import view_config
 from pyramid.tweens import MAIN
+from pyramid.view import view_config
 
 from pyramid_zipkin import zipkin
 

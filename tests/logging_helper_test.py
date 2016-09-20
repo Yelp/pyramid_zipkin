@@ -1,5 +1,4 @@
 import mock
-
 import pytest
 
 from pyramid_zipkin import logging_helper

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 This module contains utilities for support Zipkin distributed tracing system:
 

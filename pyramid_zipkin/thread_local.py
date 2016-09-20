@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import threading
 
 _thread_local = threading.local()

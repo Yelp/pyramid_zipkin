@@ -1,5 +1,4 @@
 import mock
-
 from webtest import TestApp
 
 from .app import main

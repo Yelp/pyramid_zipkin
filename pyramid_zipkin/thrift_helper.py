@@ -4,8 +4,8 @@ import socket
 import struct
 
 import thriftpy
-from thriftpy.transport import TMemoryBuffer
 from thriftpy.protocol.binary import TBinaryProtocol
+from thriftpy.transport import TMemoryBuffer
 
 
 thrift_filepath = os.path.join(os.path.dirname(__file__),

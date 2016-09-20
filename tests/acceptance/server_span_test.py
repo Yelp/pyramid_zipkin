@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-import mock
 import time
 
+import mock
 from webtest import TestApp
 
 from .app import main
-from tests.acceptance import test_helper
 from pyramid_zipkin.thrift_helper import unsigned_hex_to_signed_int
+from tests.acceptance import test_helper
 
 
 @mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
