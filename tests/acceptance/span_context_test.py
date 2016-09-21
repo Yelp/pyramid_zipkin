@@ -7,7 +7,7 @@ from tests.acceptance.test_helper import assert_extra_annotations
 from tests.acceptance.test_helper import assert_extra_binary_annotations
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_log_new_client_spans(
     thrift_obj,
     sampled_trace_id_generator
@@ -80,7 +80,7 @@ def _assert_headers_present(settings, is_sampled):
     assert expected == headers_json
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_span_context(
     thrift_obj,
     sampled_trace_id_generator
@@ -124,7 +124,7 @@ def test_span_context(
     assert annotations['ss'] == annotations['cr']
 
 
-@mock.patch('pyramid_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_decorator(
     thrift_obj,
     sampled_trace_id_generator
