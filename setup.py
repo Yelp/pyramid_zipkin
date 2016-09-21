@@ -18,9 +18,9 @@ setup(
     packages=find_packages(exclude=('tests*',)),
     package_data={'': ['*.thrift']},
     install_requires=[
+        'py_zipkin',
         'pyramid',
         'six',
-        'py_zipkin',
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
