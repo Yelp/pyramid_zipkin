@@ -3,9 +3,9 @@
 import re
 
 import six
-from pyramid.interfaces import IRoutesMapper
 from py_zipkin.zipkin import ZipkinAttrs
 from py_zipkin.util import generate_random_64bit_string
+from pyramid.interfaces import IRoutesMapper
 
 
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5

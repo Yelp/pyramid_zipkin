@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import mock
-import pytest
 import time
 
+import pytest
+from py_zipkin.exception import ZipkinError
+from py_zipkin.util import unsigned_hex_to_signed_int
 from webtest import TestApp
 
 from .app import main
 from tests.acceptance import test_helper
-from py_zipkin.exception import ZipkinError
-from py_zipkin.util import unsigned_hex_to_signed_int
 
 
 @mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
