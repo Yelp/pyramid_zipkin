@@ -28,8 +28,8 @@ def zipkin_tween(handler, registry):
         else:
             raise ZipkinError(
                 "`zipkin.transport_handler` is a required config property, which"
-                " is missing. It is a callback method which takes stream_name and"
-                " a message as the params and logs message via scribe/kafka."
+                " is missing. It is a callback method which takes a message as a"
+                " param and logs it via scribe/kafka."
             )
 
         service_name = request.registry.settings.get('service_name', 'unknown')
