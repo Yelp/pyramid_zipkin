@@ -15,7 +15,7 @@ setup(
     license='Copyright Yelp 2016',
     url="https://github.com/Yelp/pyramid_zipkin",
     description='Zipkin instrumentation for the Pyramid framework.',
-    packages=find_packages(exclude=('tests*', 'testing*', 'tools*')),
+    packages=find_packages(exclude=('tests*',)),
     package_data={'': ['*.thrift']},
     install_requires=[
         'pyramid',
