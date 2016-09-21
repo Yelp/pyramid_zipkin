@@ -1,4 +1,4 @@
-.PHONY: all install test tests clean docs
+.PHONY: all install test tests clean docs install-hooks
 
 all: test
 
@@ -10,6 +10,9 @@ dev: clean
 
 install:
 	pip install .
+
+install-hooks:
+	tox -e pre-commit -- install -f --install-hooks
 
 test:
 	tox
