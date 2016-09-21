@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-
 from py_zipkin.exception import ZipkinError
 from py_zipkin.zipkin import zipkin_span
+
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
 

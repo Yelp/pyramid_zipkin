@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import mock
 import time
 
+import mock
 import pytest
 from py_zipkin.exception import ZipkinError
 from py_zipkin.util import unsigned_hex_to_signed_int

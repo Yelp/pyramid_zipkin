@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-
 from py_zipkin.logging_helper import zipkin_logger
 from py_zipkin.zipkin import create_http_headers_for_new_span
 from py_zipkin.zipkin import zipkin_span
 from pyramid.config import Configurator
 from pyramid.response import Response
-from pyramid.view import view_config
 from pyramid.tweens import MAIN
+from pyramid.view import view_config
 
 
 @view_config(route_name='sample_route', renderer='json')

@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-
 import re
 
 import six
-from py_zipkin.zipkin import ZipkinAttrs
 from py_zipkin.util import generate_random_64bit_string
+from py_zipkin.zipkin import ZipkinAttrs
 from pyramid.interfaces import IRoutesMapper
 
 
