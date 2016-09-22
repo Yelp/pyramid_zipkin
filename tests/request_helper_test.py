@@ -3,16 +3,6 @@ import mock
 from pyramid_zipkin import request_helper
 
 
-@mock.patch('pyramid_zipkin.request_helper.codecs.encode', autospec=True)
-def test_generate_random_64bit_string(rand):
-    rand.return_value = b'17133d482ba4f605'
-    random_string = request_helper.generate_random_64bit_string()
-    assert random_string == '17133d482ba4f605'
-    # This acts as a contract test of sorts. This should return a str
-    # in both py2 and py3. IOW, no unicode objects.
-    assert isinstance(random_string, str)
-
-
 def test_should_not_sample_path_returns_true_if_path_is_blacklisted(
     dummy_request
 ):
@@ -136,11 +126,6 @@ def test_get_trace_id_returns_some_random_id_by_default(compat, dummy_request):
     assert '37133d482ba4f605' == request_helper.get_trace_id(dummy_request)
 
 
-def test_get_trace_id_works_with_old_style_hex_string(dummy_request):
-    dummy_request.headers = {'X-B3-TraceId': '-0x3ab5151d76fb85e1'}
-    assert 'c54aeae289047a1f' == request_helper.get_trace_id(dummy_request)
-
-
 @mock.patch('pyramid_zipkin.request_helper.is_tracing', autospec=True)
 def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(
     mock, dummy_request
@@ -161,14 +146,3 @@ def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(
         is_sampled='bla'
     )
     assert zipkin_attr == request_helper.create_zipkin_attr(dummy_request)
-
-
-def test_signed_hex_to_unsigned_hex():
-    assert (
-        request_helper._signed_hex_to_unsigned_hex('0xd68adf75f4cfd13') ==
-        'd68adf75f4cfd13'
-    )
-    assert (
-        request_helper._signed_hex_to_unsigned_hex('-0x3ab5151d76fb85e1') ==
-        'c54aeae289047a1f'
-    )

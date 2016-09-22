@@ -1,10 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.12.2"
+__version__ = "0.13.0"
 
 setup(
     name='pyramid_zipkin',
@@ -14,13 +13,13 @@ setup(
     author_email='opensource+pyramid-zipkin@yelp.com',
     license='Copyright Yelp 2016',
     url="https://github.com/Yelp/pyramid_zipkin",
-    description='Zipkin distributed tracing system support library for pyramid.',
-    packages=find_packages(exclude=('tests*', 'testing*', 'tools*')),
+    description='Zipkin instrumentation for the Pyramid framework.',
+    packages=find_packages(exclude=('tests*',)),
     package_data={'': ['*.thrift']},
     install_requires=[
+        'py_zipkin',
         'pyramid',
         'six',
-        'thriftpy',
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

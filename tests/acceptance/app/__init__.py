@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-import logging
-
+from py_zipkin.logging_helper import zipkin_logger
+from py_zipkin.zipkin import create_http_headers_for_new_span
+from py_zipkin.zipkin import zipkin_span
 from pyramid.config import Configurator
 from pyramid.response import Response
-from pyramid.view import view_config
 from pyramid.tweens import MAIN
-
-from pyramid_zipkin import zipkin
-
-zipkin_logger = logging.getLogger('pyramid_zipkin.logger')
+from pyramid.view import view_config
 
 
 @view_config(route_name='sample_route', renderer='json')
@@ -50,7 +47,7 @@ def span_context(dummy_request):
         'binary_annotations': {'server': 'true'},
     })
     # Creates a new span, a child of the server span
-    with zipkin.SpanContext(
+    with zipkin_span(
         service_name='child', span_name='get',
         binary_annotations={'foo': 'bar'},
     ):
@@ -72,7 +69,11 @@ def span_context(dummy_request):
 @view_config(route_name='decorator_context', renderer='json')
 def decorator_context(dummy_request):
 
-    @zipkin.zipkin_span('my_service', 'my_span', binary_annotations={'a': '1'})
+    @zipkin_span(
+        service_name='my_service',
+        span_name='my_span',
+        binary_annotations={'a': '1'},
+    )
     def some_function(a, b):
         return str(a + b)
 
@@ -81,7 +82,7 @@ def decorator_context(dummy_request):
 
 @view_config(route_name='sample_route_child_span', renderer='json')
 def sample_child_span(dummy_request):
-    return zipkin.create_headers_for_new_span()
+    return create_http_headers_for_new_span()
 
 
 @view_config(route_name='server_error', renderer='json')
@@ -101,7 +102,7 @@ def client_error(dummy_request):
 def main(global_config, **settings):
     """ Very basic pyramid app """
     settings['service_name'] = 'acceptance_service'
-    settings['zipkin.transport_handler'] = lambda x, y: None
+    settings['zipkin.transport_handler'] = lambda x: None
 
     config = Configurator(settings=settings)
 
@@ -117,6 +118,6 @@ def main(global_config, **settings):
 
     config.scan()
 
-    config.add_tween('pyramid_zipkin.zipkin.zipkin_tween', over=MAIN)
+    config.add_tween('pyramid_zipkin.tween.zipkin_tween', over=MAIN)
 
     return config.make_wsgi_app()

@@ -6,7 +6,7 @@ extensions = [
     'sphinx.ext.intersphinx',
 ]
 
-release = "0.10.0"
+release = "0.13.0"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -19,7 +19,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyramid_zipkin'
-copyright = u'2015, Yelp, Inc'
+copyright = u'2016, Yelp, Inc'
 
 exclude_patterns = []
 
