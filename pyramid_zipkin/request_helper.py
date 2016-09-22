@@ -19,7 +19,9 @@ def get_trace_id(request):
     :returns: a 64-bit hex string
     """
     if 'X-B3-TraceId' in request.headers:
-        trace_id = request.headers['X-B3-TraceId']
+        # Tolerates 128 bit X-B3-TraceId by reading the right-most 16 hex
+        # characters (as opposed to overflowing a U64 and starting a new trace).
+        trace_id = request.headers['X-B3-TraceId'][-16:]
     elif 'zipkin.trace_id_generator' in request.registry.settings:
         trace_id = request.registry.settings[
             'zipkin.trace_id_generator'](request)

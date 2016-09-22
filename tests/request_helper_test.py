@@ -103,11 +103,21 @@ def test_is_tracing_returns_what_tracing_percent_method_returns_for_rest(
 
 
 def test_get_trace_id_returns_header_value_if_present(dummy_request):
-    dummy_request.headers = {'X-B3-TraceId': '17133d482ba4f605'}
+    dummy_request.headers = {'X-B3-TraceId': '48485a3953bb6124'}
     dummy_request.registry.settings = {
         'zipkin.trace_id_generator': lambda r: '17133d482ba4f605',
     }
-    assert '17133d482ba4f605' == request_helper.get_trace_id(dummy_request)
+    assert '48485a3953bb6124' == request_helper.get_trace_id(dummy_request)
+
+
+def test_get_trace_id_returns_header_value_if_present_128_bit(dummy_request):
+    # When someone passes a 128-bit trace id, it ends up as 32 hex characters.
+    # We choose the right-most 16 characters (corresponding to the lowest 64 bits)
+    dummy_request.headers = {'X-B3-TraceId': '463ac35c9f6413ad48485a3953bb6124'}
+    dummy_request.registry.settings = {
+        'zipkin.trace_id_generator': lambda r: '17133d482ba4f605',
+    }
+    assert '48485a3953bb6124' == request_helper.get_trace_id(dummy_request)
 
 
 def test_get_trace_id_runs_custom_trace_id_generator_if_present(dummy_request):
