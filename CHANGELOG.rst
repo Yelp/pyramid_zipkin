@@ -1,3 +1,8 @@
+0.13.1 (2016-09-21)
+-------------------
+- Alias `create_headers_for_new_span` to `create_http_headers_for_new_span`
+  for backwards compatibility.
+
 0.13.0 (2016-09-12)
 -------------------
 - Moved non-pyramid and zipkin-only code to py_zipkin package
