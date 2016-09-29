@@ -15,11 +15,11 @@ zipkin.transport_handler
 
         from kafka import SimpleProducer, KafkaClient
 
-        def kafka_handler(message):
+        def kafka_handler(stream_name, message):
 
             kafka = KafkaClient('{0}:{1}'.format('localhost', 9092))
             producer = SimpleProducer(kafka, async=True)
-            producer.send_messages('some_stream_name', message)
+            producer.send_messages(stream_name, message)
 
     The above example uses python package `kafka-python <https://pypi.python.org/pypi/kafka-python>`_.
 
@@ -32,7 +32,7 @@ zipkin.transport_handler
         from thrift.transport import TTransport, TSocket
         from thrift.protocol import TBinaryProtocol
 
-        def scribe_handler(message):
+        def scribe_handler(stream_name, message):
             socket = TSocket.TSocket(host="HOST", port=9999)
             transport = TTransport.TFramedTransport(socket)
             protocol = TBinaryProtocol.TBinaryProtocol(
@@ -41,7 +41,7 @@ zipkin.transport_handler
             transport.open()
 
             message_b64 = base64.b64encode(message).strip()
-            log_entry = scribe.LogEntry('some_stream_name', message_b64)
+            log_entry = scribe.LogEntry(stream_name, message_b64)
             result = client.Log(messages=[log_entry])
             if result == 0:
               print 'success'
@@ -82,6 +82,11 @@ zipkin.blacklisted_routes
     .. code-block:: python
 
         'zipkin.blacklisted_routes': ['some_internal_route',]
+
+
+zipkin.stream_name
+~~~~~~~~~~~~~~~~~~
+    A log name to log Zipkin spans to. Defaults to 'zipkin'.
 
 
 zipkin.tracing_percent
@@ -132,6 +137,7 @@ These settings can be added at Pyramid application setup like so:
             # ...
             settings['service_name'] = 'zipkin'
             settings['zipkin.transport_handler'] = scribe_handler
+            settings['zipkin.stream_name'] = 'zipkin_log'
             settings['zipkin.blacklisted_paths'] = [r'^/foo/?']
             settings['zipkin.blacklisted_routes'] = ['bar']
             settings['zipkin.trace_id_generator'] = lambda req: '0x42'
