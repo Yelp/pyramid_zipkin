@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+import struct
 
 import six
 from py_zipkin.util import generate_random_64bit_string
@@ -19,16 +20,29 @@ def get_trace_id(request):
     :returns: a 64-bit hex string
     """
     if 'X-B3-TraceId' in request.headers:
+        trace_id = _convert_signed_hex(request.headers['X-B3-TraceId'])
         # Tolerates 128 bit X-B3-TraceId by reading the right-most 16 hex
         # characters (as opposed to overflowing a U64 and starting a new trace).
-        trace_id = request.headers['X-B3-TraceId'][-16:]
+        trace_id = trace_id[-16:]
     elif 'zipkin.trace_id_generator' in request.registry.settings:
-        trace_id = request.registry.settings[
-            'zipkin.trace_id_generator'](request)
+        trace_id = _convert_signed_hex(request.registry.settings[
+            'zipkin.trace_id_generator'](request))
     else:
         trace_id = generate_random_64bit_string()
 
     return trace_id
+
+
+def _convert_signed_hex(s):
+    """Takes a signed hex string that begins with '0x' and converts it to
+    a 16-character string representing an unsigned hex value.
+    Examples:
+        '0xd68adf75f4cfd13' => 'd68adf75f4cfd13'
+        '-0x3ab5151d76fb85e1' => 'c54aeae289047a1f'
+    """
+    if s.startswith('0x') or s.startswith('-0x'):
+        s = '{0:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
+    return s.zfill(16)
 
 
 def should_not_sample_path(request):
