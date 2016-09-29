@@ -156,3 +156,19 @@ def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(
         is_sampled='bla'
     )
     assert zipkin_attr == request_helper.create_zipkin_attr(dummy_request)
+
+
+def test_get_trace_id_works_with_old_style_hex_string(dummy_request):
+    dummy_request.headers = {'X-B3-TraceId': '-0x3ab5151d76fb85e1'}
+    assert 'c54aeae289047a1f' == request_helper.get_trace_id(dummy_request)
+
+
+def test_convert_signed_hex():
+    assert (
+        request_helper._convert_signed_hex('0xd68adf75f4cfd13') ==
+        '0d68adf75f4cfd13'
+    )
+    assert (
+        request_helper._convert_signed_hex('-0x3ab5151d76fb85e1') ==
+        'c54aeae289047a1f'
+    )
