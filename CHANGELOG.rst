@@ -1,3 +1,9 @@
+0.15.0 (2016-09-29)
+-------------------
+- Make `get_trace_id` function more defensive about what types of trace
+  ids it accepts. Converts "0x..." and "-0x..." IDs to remove the leading
+  "Ox"s
+
 0.14.0 (2016-09-29)
 -------------------
 - Make `zipkin.transport_handler` a function that takes two arguments, a
