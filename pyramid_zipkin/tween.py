@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import functools
+
 from py_zipkin.exception import ZipkinError
 from py_zipkin.zipkin import zipkin_span
 
@@ -22,14 +24,16 @@ def zipkin_tween(handler, registry):
         # Creates zipkin_attrs and attaches a zipkin_trace_id attr to the request
         zipkin_attrs = create_zipkin_attr(request)
 
-        if 'zipkin.transport_handler' in request.registry.settings:
-            transport_handler = request.registry.settings[
-                'zipkin.transport_handler']
+        settings = request.registry.settings
+        if 'zipkin.transport_handler' in settings:
+            transport_handler = settings['zipkin.transport_handler']
+            stream_name = settings.get('zipkin.stream_name', 'zipkin')
+            transport_handler = functools.partial(transport_handler, stream_name)
         else:
             raise ZipkinError(
                 "`zipkin.transport_handler` is a required config property, which"
-                " is missing. It is a callback method which takes a message as a"
-                " param and logs it via scribe/kafka."
+                " is missing. It is a callback method which takes a log stream"
+                " and a message as params and logs the message via scribe/kafka."
             )
 
         service_name = request.registry.settings.get('service_name', 'unknown')

@@ -102,7 +102,7 @@ def client_error(dummy_request):
 def main(global_config, **settings):
     """ Very basic pyramid app """
     settings['service_name'] = 'acceptance_service'
-    settings['zipkin.transport_handler'] = lambda x: None
+    settings['zipkin.transport_handler'] = lambda x, y: None
 
     config = Configurator(settings=settings)
 

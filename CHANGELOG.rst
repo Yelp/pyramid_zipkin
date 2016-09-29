@@ -1,3 +1,8 @@
+0.14.0 (2016-09-29)
+-------------------
+- Make `zipkin.transport_handler` a function that takes two arguments, a
+  stream_name and a message.
+
 0.13.1 (2016-09-21)
 -------------------
 - Alias `create_headers_for_new_span` to `create_http_headers_for_new_span`
