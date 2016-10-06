@@ -74,7 +74,7 @@ def _assert_headers_present(settings, is_sampled):
     }
 
     headers = WebTestApp(main({}, **settings)).get('/sample_child_span',
-                                                status=200)
+                                                   status=200)
     headers_json = headers.json
     headers_json.pop('X-B3-SpanId')  # Randomly generated - Ignore.
 
