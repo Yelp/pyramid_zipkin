@@ -1,5 +1,5 @@
 import mock
-from webtest import TestApp
+from webtest import TestApp as WebTestApp
 
 from .app import main
 from tests.acceptance.test_helper import assert_extra_annotations
@@ -18,7 +18,7 @@ def test_log_new_client_spans(
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
 
-    TestApp(main({}, **settings)).get('/sample_v2_client', status=200)
+    WebTestApp(main({}, **settings)).get('/sample_v2_client', status=200)
 
     # Ugly extraction of spans from mock thrift_obj call args
     foo_span_args, bar_span_args, server_span_args = thrift_obj.call_args_list
@@ -73,7 +73,7 @@ def _assert_headers_present(settings, is_sampled):
         'X-B3-TraceId': '17133d482ba4f605',
     }
 
-    headers = TestApp(main({}, **settings)).get('/sample_child_span',
+    headers = WebTestApp(main({}, **settings)).get('/sample_child_span',
                                                 status=200)
     headers_json = headers.json
     headers_json.pop('X-B3-SpanId')  # Randomly generated - Ignore.
@@ -93,7 +93,7 @@ def test_span_context(
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
 
-    TestApp(main({}, **settings)).get('/span_context', status=200)
+    WebTestApp(main({}, **settings)).get('/span_context', status=200)
 
     # Ugly extraction of spans from mock thrift_obj call args
     # The order of span logging goes from innermost (grandchild) up.
@@ -138,7 +138,7 @@ def test_decorator(
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
 
-    TestApp(main({}, **settings)).get('/decorator_context', status=200)
+    WebTestApp(main({}, **settings)).get('/decorator_context', status=200)
 
     # Two spans are logged - child span, then server span
     child_span_args, server_span_args = thrift_obj.call_args_list
