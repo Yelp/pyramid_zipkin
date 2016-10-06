@@ -1,3 +1,7 @@
+0.16.0 (2016-10-06)
+-------------------
+- Fix sample rate bug and make sampling be random and not depend on request id.
+
 0.15.0 (2016-09-29)
 -------------------
 - Make `get_trace_id` function more defensive about what types of trace
