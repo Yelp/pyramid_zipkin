@@ -7,11 +7,6 @@ def default_trace_id_generator(dummy_request):
 
 
 @pytest.fixture
-def sampled_trace_id_generator(dummy_request):
-    return lambda dummy_request: '0' * 16
-
-
-@pytest.fixture
 def settings():
     return {
         'zipkin.tracing_percent': 100,
