@@ -43,18 +43,6 @@ def test_sample_server_span_with_100_percent_tracing(
 
 
 @mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_sample_server_span_with_specific_trace_id_which_samples(
-        thrift_obj, sampled_trace_id_generator):
-    settings = {
-        'zipkin.trace_id_generator': sampled_trace_id_generator,
-    }
-
-    TestApp(main({}, **settings)).get('/sample', status=200)
-
-    assert thrift_obj.call_count == 1
-
-
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
@@ -67,10 +55,10 @@ def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
 
 
 @mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_blacklisted_route_has_no_span(thrift_obj, sampled_trace_id_generator):
+def test_blacklisted_route_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': sampled_trace_id_generator,
+        'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_routes': ['sample_route'],
     }
 
@@ -80,10 +68,10 @@ def test_blacklisted_route_has_no_span(thrift_obj, sampled_trace_id_generator):
 
 
 @mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
-def test_blacklisted_path_has_no_span(thrift_obj, sampled_trace_id_generator):
+def test_blacklisted_path_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': sampled_trace_id_generator,
+        'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_paths': [r'^/sample'],
     }
 
@@ -104,10 +92,11 @@ def test_no_transport_handler_throws_error():
 @mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_server_extra_annotations_are_included(
     thrift_obj,
-    sampled_trace_id_generator
+    default_trace_id_generator
 ):
     settings = {
-        'zipkin.trace_id_generator': sampled_trace_id_generator,
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
     }
 
     TestApp(main({}, **settings)).get('/sample_v2', status=200)

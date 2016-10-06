@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import random
 import re
 import struct
 
@@ -79,18 +80,16 @@ def should_not_sample_route(request):
     return (route_info and route_info.name in blacklisted_routes)
 
 
-def should_sample_as_per_zipkin_tracing_percent(tracing_percent, req_id):
+def should_sample_as_per_zipkin_tracing_percent(tracing_percent):
     """Calculate whether the request should be traced as per tracing percent.
 
     :param tracing_percent: value between 0.0 to 100.0
     :type tracing_percent: float
-    :param req_id: unique request id of the request
     :returns: boolean whether current request should be sampled.
     """
     if tracing_percent == 0.0:  # Prevent the ZeroDivision
         return False
-    inverse_frequency = int((1.0 / tracing_percent) * 100)
-    return int(req_id, 16) % inverse_frequency == 0
+    return (random.random() * 100) < tracing_percent
 
 
 def is_tracing(request):
@@ -114,7 +113,7 @@ def is_tracing(request):
         zipkin_tracing_percent = request.registry.settings.get(
             'zipkin.tracing_percent', DEFAULT_REQUEST_TRACING_PERCENT)
         return should_sample_as_per_zipkin_tracing_percent(
-            zipkin_tracing_percent, request.zipkin_trace_id)
+            zipkin_tracing_percent)
 
 
 def create_zipkin_attr(request):

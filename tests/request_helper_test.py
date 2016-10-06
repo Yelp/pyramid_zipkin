@@ -48,11 +48,11 @@ def test_should_not_sample_route_returns_false_if_blacklisted_list_is_empty(
 
 
 def test_should_be_sampled_as_per_zipkin_tracing_percent_retrns_true_for_100():
-    assert request_helper.should_sample_as_per_zipkin_tracing_percent(100.0, '42')
+    assert request_helper.should_sample_as_per_zipkin_tracing_percent(100.0)
 
 
 def test_should_be_sampled_as_per_zipkin_tracing_percent_returns_false_for_0():
-    assert not request_helper.should_sample_as_per_zipkin_tracing_percent(0, '42')
+    assert not request_helper.should_sample_as_per_zipkin_tracing_percent(0)
 
 
 @mock.patch('pyramid_zipkin.request_helper.should_not_sample_path', autospec=True)
@@ -98,7 +98,7 @@ def test_is_tracing_returns_what_tracing_percent_method_returns_for_rest(
     dummy_request.zipkin_trace_id = '42'
     assert mock.return_value == request_helper.is_tracing(dummy_request)
     mock.assert_called_once_with(
-        request_helper.DEFAULT_REQUEST_TRACING_PERCENT, '42'
+        request_helper.DEFAULT_REQUEST_TRACING_PERCENT
     )
 
 
