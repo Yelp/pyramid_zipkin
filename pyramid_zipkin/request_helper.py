@@ -125,7 +125,13 @@ def create_zipkin_attr(request):
     request.set_property(get_trace_id, 'zipkin_trace_id', reify=True)
 
     trace_id = request.zipkin_trace_id
-    is_sampled = is_tracing(request)
+
+    settings = request.registry.settings
+    if 'zipkin.is_tracing' in settings:
+        is_sampled = settings['zipkin.is_tracing'](request)
+    else:
+        is_sampled = is_tracing(request)
+
     span_id = request.headers.get(
         'X-B3-SpanId', generate_random_64bit_string())
     parent_span_id = request.headers.get('X-B3-ParentSpanId', None)

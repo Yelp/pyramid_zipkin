@@ -21,10 +21,14 @@ def zipkin_tween(handler, registry):
     :returns: pyramid tween
     """
     def tween(request):
-        # Creates zipkin_attrs and attaches a zipkin_trace_id attr to the request
-        zipkin_attrs = create_zipkin_attr(request)
-
         settings = request.registry.settings
+
+        # Creates zipkin_attrs and attaches a zipkin_trace_id attr to the request
+        if 'zipkin.create_zipkin_attr' in settings:
+            zipkin_attrs = settings['zipkin.create_zipkin_attr'](request)
+        else:
+            zipkin_attrs = create_zipkin_attr(request)
+
         if 'zipkin.transport_handler' in settings:
             transport_handler = settings['zipkin.transport_handler']
             stream_name = settings.get('zipkin.stream_name', 'zipkin')
