@@ -87,8 +87,6 @@ def should_sample_as_per_zipkin_tracing_percent(tracing_percent):
     :type tracing_percent: float
     :returns: boolean whether current request should be sampled.
     """
-    if tracing_percent == 0.0:  # Prevent the ZeroDivision
-        return False
     return (random.random() * 100) < tracing_percent
 
 
