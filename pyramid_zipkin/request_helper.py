@@ -119,6 +119,9 @@ def create_zipkin_attr(request):
     Attaches lazy attribute `zipkin_trace_id` with request which is then used
     throughout the tween.
 
+    Consumes custom is_tracing function to determine if the request is traced
+    if one is set in the pyramid registry.
+
     :param request: pyramid request object
     :rtype: :class:`pyramid_zipkin.request_helper.ZipkinAttrs`
     """

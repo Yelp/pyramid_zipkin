@@ -15,6 +15,9 @@ def zipkin_tween(handler, registry):
     into threadlocal storage, so `create_http_headers_for_new_span` and
     `zipkin_span` will have access to the proper Zipkin state.
 
+    Consumes custom create_zipkin_attr function if one is set in the pyramid
+    registry.
+
     :param handler: pyramid request handler
     :param registry: pyramid app registry
 
