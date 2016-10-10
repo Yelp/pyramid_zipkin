@@ -120,6 +120,15 @@ def test_get_trace_id_returns_header_value_if_present_128_bit(dummy_request):
     assert '48485a3953bb6124' == request_helper.get_trace_id(dummy_request)
 
 
+def test_create_zipkin_attr_runs_custom_is_tracing_if_present(dummy_request):
+    is_tracing = mock.Mock(return_value=True)
+    dummy_request.registry.settings = {
+        'zipkin.is_tracing': is_tracing,
+    }
+    request_helper.create_zipkin_attr(dummy_request)
+    is_tracing.assert_called_once_with(dummy_request)
+
+
 def test_get_trace_id_runs_custom_trace_id_generator_if_present(dummy_request):
     dummy_request.registry.settings = {
         'zipkin.trace_id_generator': lambda r: '27133d482ba4f605',
