@@ -5,6 +5,7 @@ import mock
 import pytest
 from py_zipkin.exception import ZipkinError
 from py_zipkin.util import unsigned_hex_to_signed_int
+from py_zipkin.zipkin import ZipkinAttrs
 from webtest import TestApp as WebTestApp
 
 from .app import main
@@ -144,3 +145,22 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
     WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
 
     assert thrift_obj.call_count == 1
+
+
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_custom_create_zipkin_attr(thrift_obj, default_trace_id_generator):
+    custom_create_zipkin_attr = mock.Mock(return_value=ZipkinAttrs(
+        trace_id='1234',
+        span_id='1234',
+        parent_span_id='5678',
+        flags=0,
+        is_sampled=True,
+    ))
+
+    settings = {
+        'zipkin.create_zipkin_attr': custom_create_zipkin_attr
+    }
+
+    WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
+
+    assert custom_create_zipkin_attr.called

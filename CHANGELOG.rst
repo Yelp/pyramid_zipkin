@@ -1,3 +1,8 @@
+0.16.1 (2016-10-14)
+-------------------
+- support for configuring custom versions of create_zipkin_attr and is_tracing
+  through the pyramid registry.
+
 0.16.0 (2016-10-06)
 -------------------
 - Fix sample rate bug and make sampling be random and not depend on request id.

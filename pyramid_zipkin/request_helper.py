@@ -119,13 +119,22 @@ def create_zipkin_attr(request):
     Attaches lazy attribute `zipkin_trace_id` with request which is then used
     throughout the tween.
 
+    Consumes custom is_tracing function to determine if the request is traced
+    if one is set in the pyramid registry.
+
     :param request: pyramid request object
     :rtype: :class:`pyramid_zipkin.request_helper.ZipkinAttrs`
     """
     request.set_property(get_trace_id, 'zipkin_trace_id', reify=True)
 
     trace_id = request.zipkin_trace_id
-    is_sampled = is_tracing(request)
+
+    settings = request.registry.settings
+    if 'zipkin.is_tracing' in settings:
+        is_sampled = settings['zipkin.is_tracing'](request)
+    else:
+        is_sampled = is_tracing(request)
+
     span_id = request.headers.get(
         'X-B3-SpanId', generate_random_64bit_string())
     parent_span_id = request.headers.get('X-B3-ParentSpanId', None)

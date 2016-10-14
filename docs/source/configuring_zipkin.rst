@@ -110,6 +110,25 @@ zipkin.trace_id_generator
     id deterministic).
 
 
+zipkin.create_zipkin_attr
+~~~~~~~~~~~~~~~~~~~~~~~~~
+    A method that takes `request` and creates a ZipkinAttrs object. This
+    can be used to generate span_id, parent_id or other ZipkinAttrs fields
+    based on request parameters.
+
+    The method MUST take `request` as a parametr and return a ZipkinAttrs
+    object.
+
+
+zipkin.is_tracing
+~~~~~~~~~~~~~~~~~
+    A method that takes `request` and determines if the request should be
+    traced. This can be used to determine if a request is traced based on
+    custom application specific logic.
+
+    The method MUST take `request` as a parameter and return a Boolean.
+
+
 zipkin.set_extra_binary_annotations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     A method that takes `request` and `response` objects as parameters

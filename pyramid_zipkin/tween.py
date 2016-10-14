@@ -15,16 +15,23 @@ def zipkin_tween(handler, registry):
     into threadlocal storage, so `create_http_headers_for_new_span` and
     `zipkin_span` will have access to the proper Zipkin state.
 
+    Consumes custom create_zipkin_attr function if one is set in the pyramid
+    registry.
+
     :param handler: pyramid request handler
     :param registry: pyramid app registry
 
     :returns: pyramid tween
     """
     def tween(request):
-        # Creates zipkin_attrs and attaches a zipkin_trace_id attr to the request
-        zipkin_attrs = create_zipkin_attr(request)
-
         settings = request.registry.settings
+
+        # Creates zipkin_attrs and attaches a zipkin_trace_id attr to the request
+        if 'zipkin.create_zipkin_attr' in settings:
+            zipkin_attrs = settings['zipkin.create_zipkin_attr'](request)
+        else:
+            zipkin_attrs = create_zipkin_attr(request)
+
         if 'zipkin.transport_handler' in settings:
             transport_handler = settings['zipkin.transport_handler']
             stream_name = settings.get('zipkin.stream_name', 'zipkin')
