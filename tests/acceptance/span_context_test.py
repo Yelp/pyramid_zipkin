@@ -148,3 +148,18 @@ def test_decorator(
     assert child_span.parent_id == server_span.id
     assert_extra_binary_annotations(child_span, {'a': '1'})
     assert child_span.name == 'my_span'
+
+
+@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
+def test_add_logging_annotation(thrift_obj):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.add_logging_annotation': True,
+    }
+    WebTestApp(main({}, **settings)).get('/sample', status=200)
+    server_span = thrift_obj.call_args[0][0]
+    # Just make sure py-zipkin added an annotation for when logging started
+    assert any(
+        annotation.value == 'py_zipkin.logging_start'
+        for annotation in server_span.annotations
+    )
