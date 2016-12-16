@@ -52,6 +52,10 @@ def zipkin_tween(handler, registry):
             zipkin_attrs=zipkin_attrs,
             transport_handler=transport_handler,
             port=request.server_port,
+            add_logging_annotation=settings.get(
+                'zipkin.add_logging_annotation',
+                False,
+            ),
         ) as zipkin_context:
             response = handler(request)
             zipkin_context.update_binary_annotations_for_root_span(
