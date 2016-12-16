@@ -1,3 +1,8 @@
+0.17.0 (2016-12-16)
+-------------------
+- Add registry setting to force py-zipkin to add a logging annotation to server
+  traces. Requires py-zipkin >= 0.4.4.
+
 0.16.1 (2016-10-14)
 -------------------
 - support for configuring custom versions of create_zipkin_attr and is_tracing
