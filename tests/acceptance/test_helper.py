@@ -6,12 +6,14 @@ def get_timestamps(span):
     return timestamps
 
 
-def remove_ipv4(span):
+def remove_ip_fields(span):
     for ann in span['annotations']:
         ann['host'].pop('ipv4', None)
+        ann['host'].pop('ipv6', None)
 
     for b_ann in span['binary_annotations']:
         b_ann['host'].pop('ipv4', None)
+        b_ann['host'].pop('ipv6', None)
 
 
 def massage_result_span(span_obj):
@@ -28,7 +30,7 @@ def massage_result_span(span_obj):
         bann['host'] = bann['host'].__dict__
     span['annotations'].sort(key=lambda ann: ann['value'])
     span['binary_annotations'].sort(key=lambda ann: ann['key'])
-    remove_ipv4(span)
+    remove_ip_fields(span)
     return span
 
 

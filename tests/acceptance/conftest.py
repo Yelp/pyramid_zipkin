@@ -72,4 +72,7 @@ def get_span(
                 response_status_code_annotation,
             ],
             'name': 'GET /sample',
+            # An optional field for 128-bit trace IDs that py-zipkin doesn't
+            # set. See https://github.com/Yelp/py_zipkin/issues/28
+            'trace_id_high': None,
             }
