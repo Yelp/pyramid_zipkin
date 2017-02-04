@@ -12,7 +12,6 @@ from .app import main
 from tests.acceptance import test_helper
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_sample_server_span_with_100_percent_tracing(
         thrift_obj, default_trace_id_generator, get_span):
     settings = {
@@ -43,7 +42,6 @@ def test_sample_server_span_with_100_percent_tracing(
     assert thrift_obj.call_count == 1
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
@@ -55,7 +53,6 @@ def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
     assert thrift_obj.call_count == 0
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_blacklisted_route_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
@@ -68,7 +65,6 @@ def test_blacklisted_route_has_no_span(thrift_obj, default_trace_id_generator):
     assert thrift_obj.call_count == 0
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_blacklisted_path_has_no_span(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
@@ -90,7 +86,6 @@ def test_no_transport_handler_throws_error():
         WebTestApp(app_main).get('/sample', status=200)
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_server_extra_annotations_are_included(
     thrift_obj,
     default_trace_id_generator
@@ -115,7 +110,6 @@ def test_server_extra_annotations_are_included(
     )
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_binary_annotations(thrift_obj, default_trace_id_generator):
     def set_extra_binary_annotations(dummy_request, response):
         return {'other': dummy_request.registry.settings['other_attr']}
@@ -147,7 +141,6 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
     assert thrift_obj.call_count == 1
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_custom_create_zipkin_attr(thrift_obj, default_trace_id_generator):
     custom_create_zipkin_attr = mock.Mock(return_value=ZipkinAttrs(
         trace_id='1234',
@@ -164,3 +157,19 @@ def test_custom_create_zipkin_attr(thrift_obj, default_trace_id_generator):
     WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
 
     assert custom_create_zipkin_attr.called
+
+
+def test_report_root_timestamp(thrift_obj, default_trace_id_generator):
+    settings = {
+        'zipkin.report_root_timestamp': True,
+        'zipkin.tracing_percent': 100.0,
+    }
+
+    old_time = time.time() * 1000000
+
+    def check_for_timestamp_and_duration(span_obj):
+        assert span_obj.timestamp > old_time
+        assert span_obj.duration > 0
+
+    thrift_obj.side_effect = check_for_timestamp_and_duration
+    WebTestApp(main({}, **settings)).get('/sample', status=200)
