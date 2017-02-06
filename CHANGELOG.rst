@@ -1,3 +1,8 @@
+0.18.0 (2017-02-06)
+-------------------
+- Add automatic timestamp/duration reporting for root server span. Also added
+  functionality for individual services to override this setting in configuration.
+
 0.17.0 (2016-12-16)
 -------------------
 - Add registry setting to force py-zipkin to add a logging annotation to server
