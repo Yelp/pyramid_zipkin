@@ -27,6 +27,11 @@ def test_sample_server_span_with_100_percent_tracing(
         get_span['trace_id'] = unsigned_hex_to_signed_int(
             default_trace_id_generator(span_obj),
         )
+        # The request to this service had no incoming Zipkin headers, so it's
+        # assumed to be the root span of a trace, which means it logs
+        # timestamp and duration.
+        assert result_span.pop('timestamp') > old_time
+        assert result_span.pop('duration') > 0
         assert get_span == result_span
         assert old_time <= timestamps['sr']
         assert timestamps['sr'] <= timestamps['ss']
@@ -40,6 +45,38 @@ def test_sample_server_span_with_100_percent_tracing(
         WebTestApp(main({}, **settings)).get('/sample', status=200)
 
     assert thrift_obj.call_count == 1
+
+
+def test_upstream_zipkin_headers_sampled(thrift_obj, default_trace_id_generator):
+    settings = {'zipkin.trace_id_generator': default_trace_id_generator}
+
+    trace_hex = 'aaaaaaaaaaaaaaaa'
+    span_hex = 'bbbbbbbbbbbbbbbb'
+    parent_hex = 'cccccccccccccccc'
+
+    def validate(span):
+        assert span.trace_id == unsigned_hex_to_signed_int(trace_hex)
+        assert span.id == unsigned_hex_to_signed_int(span_hex)
+        assert span.parent_id == unsigned_hex_to_signed_int(parent_hex)
+        # Since Zipkin headers are passed in, the span in assumed to be the
+        # server part of a span started by an upstream client, so doesn't have
+        # to log timestamp/duration.
+        assert span.timestamp is None
+        assert span.duration is None
+
+    thrift_obj.side_effect = validate
+
+    WebTestApp(main({}, **settings)).get(
+        '/sample',
+        status=200,
+        headers={
+            'X-B3-TraceId': trace_hex,
+            'X-B3-SpanId': span_hex,
+            'X-B3-ParentSpanId': parent_hex,
+            'X-B3-Flags': '0',
+            'X-B3-Sampled': '1',
+        },
+    )
 
 
 def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):

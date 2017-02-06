@@ -70,8 +70,6 @@ def get_span(
     return {'debug': False,
             'id': 1,
             'parent_id': None,
-            'duration': None,
-            'timestamp': None,
             'annotations': sorted(
                 [sr_annotation, ss_annotation],
                 key=lambda ann: ann['value'],

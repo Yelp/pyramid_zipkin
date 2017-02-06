@@ -64,7 +64,14 @@ def _get_settings_from_request(request):
         'zipkin.add_logging_annotation',
         False,
     )
-    report_root_timestamp = settings.get('zipkin.report_root_timestamp', False)
+    # If the incoming request doesn't have Zipkin headers, this request is
+    # assumed to be the root span of a trace. There's also a configuration
+    # override to allow services to write their own logic for reporting
+    # timestamp/duration.
+    if 'zipkin.report_root_timestamp' in settings:
+        report_root_timestamp = settings['zipkin.report_root_timestamp']
+    else:
+        report_root_timestamp = 'X-B3-TraceId' not in request.headers
     return ZipkinSettings(
         zipkin_attrs,
         transport_handler,
