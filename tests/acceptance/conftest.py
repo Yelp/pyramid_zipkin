@@ -1,9 +1,19 @@
+# -*- coding: utf-8 -*-
+import mock
 import pytest
 
 
 @pytest.fixture
 def default_trace_id_generator(dummy_request):
     return lambda dummy_request: '17133d482ba4f605'
+
+
+@pytest.fixture
+def thrift_obj():
+    with mock.patch(
+        'py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True
+    ) as mock_thrift_obj:
+        yield mock_thrift_obj
 
 
 @pytest.fixture
@@ -60,8 +70,6 @@ def get_span(
     return {'debug': False,
             'id': 1,
             'parent_id': None,
-            'duration': None,
-            'timestamp': None,
             'annotations': sorted(
                 [sr_annotation, ss_annotation],
                 key=lambda ann: ann['value'],
