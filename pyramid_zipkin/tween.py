@@ -110,7 +110,7 @@ def zipkin_tween(handler, registry):
             report_root_timestamp=zipkin_settings.report_root_timestamp,
         ) as zipkin_context:
             response = handler(request)
-            zipkin_context.update_binary_annotations_for_root_span(
+            zipkin_context.update_binary_annotations(
                 get_binary_annotations(request, response),
             )
             return response
