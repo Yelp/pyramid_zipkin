@@ -1,17 +1,15 @@
-import mock
 import pytest
 
+from pyramid import testing
 from pyramid_zipkin import request_helper
+from pyramid.testing import DummyRequest
 
 
 @pytest.fixture
 def dummy_request():
-    request = mock.Mock()
-    request.registry.settings = {}
-    request.headers = {}
-    request.unique_request_id = '17133d482ba4f605'
-    request.path = 'bla'
-    return request
+    testing.setUp()
+    yield DummyRequest()
+    testing.tearDown()
 
 
 @pytest.fixture

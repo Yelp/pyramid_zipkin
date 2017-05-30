@@ -181,3 +181,11 @@ def test_convert_signed_hex():
         request_helper._convert_signed_hex('-0x3ab5151d76fb85e1') ==
         'c54aeae289047a1f'
     )
+
+
+def test_version_in_annotations(dummy_request):
+    dummy_request.registry['version'] = 'abc123'
+    response = mock.Mock()
+    response.status_code = 200
+    annotations = request_helper.get_binary_annotations(dummy_request, response)
+    assert 'abc123' == annotations['version_SHA']
