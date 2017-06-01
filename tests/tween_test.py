@@ -7,7 +7,7 @@ from pyramid_zipkin import tween
 def test_zipkin_tween_not_sampled(mock_span, dummy_request, dummy_response):
     """
     If the request is not sampled, we shouldn't use the
-    py_zipkin context manage
+    py_zipkin context manager
     """
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: False,
@@ -25,7 +25,7 @@ def test_zipkin_tween_not_sampled(mock_span, dummy_request, dummy_response):
 def test_zipkin_tween_sampled(mock_span, dummy_request, dummy_response):
     """
     If the request is sampled, we should wrap the handler in the
-    py_zipkin context manage
+    py_zipkin context manager
     """
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: True,

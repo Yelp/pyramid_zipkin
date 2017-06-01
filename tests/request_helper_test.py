@@ -130,16 +130,15 @@ def test_create_zipkin_attr_runs_custom_is_tracing_if_present(dummy_request):
     is_tracing.assert_called_once_with(dummy_request)
 
 
-@pytest.mark.parametrize('is_sampled,emit_headers,headers_are_set', [
-    (True, True, True),
-    (True, False, True),
-    (False, True, True),
-    (False, False, False),
+@pytest.mark.parametrize('is_sampled,emit_headers', [
+    (True, True),
+    (True, False),
+    (False, True),
+    (False, False),
     ])
 def test_create_zipkin_attr_add_headers(
     is_sampled,
     emit_headers,
-    headers_are_set,
     dummy_request
 ):
     """
@@ -152,7 +151,7 @@ def test_create_zipkin_attr_add_headers(
     }
     attr = request_helper.create_zipkin_attr(dummy_request)
 
-    if headers_are_set:
+    if is_sampled or emit_headers:
         assert dummy_request.set_property.call_count == 1
         assert attr.trace_id != ''
         assert attr.span_id != ''
