@@ -1,3 +1,18 @@
+0.19.0 (2017-06-01)
+-------------------
+- Added zipkin.always_emit_zipkin_headers config flag.
+- Skip zipkin_span context manager if the request is not being sampled
+  to improve performance and avoid unnecessary work.
+
+0.18.2 (2017-03-06)
+-------------------
+- Using new update_binary_annotations functions from py_zipkin.
+- Requires py_zipkin >= 0.7.0
+
+0.18.1 (2017-02-06)
+-------------------
+- No changes
+
 0.18.0 (2017-02-06)
 -------------------
 - Add automatic timestamp/duration reporting for root server span. Also added
