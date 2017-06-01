@@ -125,27 +125,34 @@ def create_zipkin_attr(request):
     :param request: pyramid request object
     :rtype: :class:`pyramid_zipkin.request_helper.ZipkinAttrs`
     """
-    request.set_property(get_trace_id, 'zipkin_trace_id', reify=True)
-
-    trace_id = request.zipkin_trace_id
-
     settings = request.registry.settings
+
     if 'zipkin.is_tracing' in settings:
         is_sampled = settings['zipkin.is_tracing'](request)
     else:
         is_sampled = is_tracing(request)
 
-    span_id = request.headers.get(
-        'X-B3-SpanId', generate_random_64bit_string())
-    parent_span_id = request.headers.get('X-B3-ParentSpanId', None)
-    flags = request.headers.get('X-B3-Flags', '0')
-    return ZipkinAttrs(
-        trace_id=trace_id,
-        span_id=span_id,
-        parent_span_id=parent_span_id,
-        flags=flags,
-        is_sampled=is_sampled,
-    )
+    # If zipkin.always_emit_zipkin_headers is set to false, don't propagate
+    # zipkin headers if we're not tracing.
+    # This saves about 0.3ms since request.set_property is quite slow
+    if is_sampled or settings.get('zipkin.always_emit_zipkin_headers', True):
+        request.set_property(get_trace_id, 'zipkin_trace_id', reify=True)
+
+        trace_id = request.zipkin_trace_id
+
+        span_id = request.headers.get(
+            'X-B3-SpanId', generate_random_64bit_string())
+        parent_span_id = request.headers.get('X-B3-ParentSpanId', None)
+        flags = request.headers.get('X-B3-Flags', '0')
+        return ZipkinAttrs(
+            trace_id=trace_id,
+            span_id=span_id,
+            parent_span_id=parent_span_id,
+            flags=flags,
+            is_sampled=is_sampled,
+        )
+
+    return ZipkinAttrs('', '', '', '0', False)
 
 
 def get_binary_annotations(request, response):

@@ -1,4 +1,5 @@
 import mock
+import pytest
 
 from pyramid_zipkin import request_helper
 
@@ -127,6 +128,53 @@ def test_create_zipkin_attr_runs_custom_is_tracing_if_present(dummy_request):
     }
     request_helper.create_zipkin_attr(dummy_request)
     is_tracing.assert_called_once_with(dummy_request)
+
+
+@pytest.mark.parametrize('is_sampled,emit_headers,headers_are_set', [
+    (True, True, True),
+    (True, False, True),
+    (False, True, True),
+    (False, False, False),
+    ])
+def test_create_zipkin_attr_add_headers(
+    is_sampled,
+    emit_headers,
+    headers_are_set,
+    dummy_request
+):
+    """
+    We should be setting the headers and zipkin_trace_id if the request is sampled
+    or if zipkin.always_emit_zipkin_headers is True.
+    """
+    dummy_request.registry.settings = {
+        'zipkin.is_tracing': lambda _: is_sampled,
+        'zipkin.always_emit_zipkin_headers': emit_headers,
+    }
+    attr = request_helper.create_zipkin_attr(dummy_request)
+
+    if headers_are_set:
+        assert dummy_request.set_property.call_count == 1
+        assert attr.trace_id != ''
+        assert attr.span_id != ''
+    else:
+        assert dummy_request.set_property.call_count == 0
+        assert attr.trace_id == ''
+        assert attr.span_id == ''
+    assert attr.is_sampled is is_sampled
+
+
+def test_create_zipkin_attr_emit_zipkin_headers_default_true(dummy_request):
+    """
+    We must ensure zipkin.always_emit_zipkin_headers is True by default
+    for backward compatibility.
+    """
+    dummy_request.registry.settings = {'zipkin.is_tracing': lambda _: False}
+    attr = request_helper.create_zipkin_attr(dummy_request)
+
+    assert dummy_request.set_property.call_count == 1
+    assert attr.trace_id != ''
+    assert attr.span_id != ''
+    assert attr.is_sampled is False
 
 
 def test_get_trace_id_runs_custom_trace_id_generator_if_present(dummy_request):

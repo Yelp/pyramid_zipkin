@@ -100,6 +100,11 @@ def zipkin_tween(handler, registry):
     def tween(request):
         zipkin_settings = _get_settings_from_request(request)
 
+        # If this request isn't sampled, don't go through the work
+        # of initializing the rest of the zipkin attributes
+        if not zipkin_settings.zipkin_attrs.is_sampled:
+            return handler(request)
+
         with zipkin_span(
             service_name=zipkin_settings.service_name,
             span_name=zipkin_settings.span_name,

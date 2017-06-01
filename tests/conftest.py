@@ -15,6 +15,13 @@ def dummy_request():
 
 
 @pytest.fixture
+def dummy_response():
+    response = mock.Mock()
+    response.status_code = 200
+    return response
+
+
+@pytest.fixture
 def zipkin_attributes():
     return {'trace_id': '17133d482ba4f605',
             'span_id': '27133d482ba4f605',
