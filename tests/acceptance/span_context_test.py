@@ -53,13 +53,15 @@ def test_headers_created_for_unsampled_child_span(
     mock_generate_string,
     default_trace_id_generator,
 ):
-    # Headers are still created if the span is unsampled.
+    # Headers are only added to the response if the request is sampled
     mock_generate_string.return_value = '17133d482ba4f605'
     settings = {
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    _assert_headers_present(settings, is_sampled='0')
+    headers = WebTestApp(main({}, **settings)).get('/sample_child_span',
+                                                   status=200)
+    assert headers.json == {}
 
 
 def _assert_headers_present(settings, is_sampled):
