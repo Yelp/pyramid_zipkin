@@ -210,3 +210,23 @@ def test_report_root_timestamp(thrift_obj, default_trace_id_generator):
 
     thrift_obj.side_effect = check_for_timestamp_and_duration
     WebTestApp(main({}, **settings)).get('/sample', status=200)
+
+
+def test_host_and_port_in_span(thrift_obj, default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.host': '1.2.2.1',
+        'zipkin.port': 1231,
+    }
+
+    def validate_span(span_obj):
+        # Assert ipv4 and port match what we expect
+        expected_ipv4 = (1 << 24) | (2 << 16) | (2 << 8) | 1
+        assert expected_ipv4 == span_obj.annotations[0].host.ipv4
+        assert 1231 == span_obj.annotations[0].host.port
+
+    thrift_obj.side_effect = validate_span
+
+    WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
+
+    assert thrift_obj.call_count == 1

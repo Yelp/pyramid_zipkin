@@ -84,6 +84,18 @@ zipkin.blacklisted_routes
         'zipkin.blacklisted_routes': ['some_internal_route',]
 
 
+zipkin.host
+~~~~~~~~~~~~~~~~~~
+    The host ip that is used for zipkin spans. If not given, host will be
+    automatically determined.
+
+
+zipkin.port
+~~~~~~~~~~~~~~~~~~
+    The port that is used for zipkin spans. If not given, port will be
+    automatically determined.
+
+
 zipkin.stream_name
 ~~~~~~~~~~~~~~~~~~
     A log name to log Zipkin spans to. Defaults to 'zipkin'.
