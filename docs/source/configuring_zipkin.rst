@@ -86,12 +86,14 @@ zipkin.blacklisted_routes
 
 zipkin.host
 ~~~~~~~~~~~~~~~~~~
-    The host ip that is used for zipkin spans.
+    The host ip that is used for zipkin spans. If not given, host will be
+    automatically determined.
 
 
 zipkin.port
 ~~~~~~~~~~~~~~~~~~
-    The port that is used for zipkin spans.
+    The port that is used for zipkin spans. If not given, port will be
+    automatically determined.
 
 
 zipkin.stream_name
