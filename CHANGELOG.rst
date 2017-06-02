@@ -1,3 +1,7 @@
+0.19.1 (2017-06-02)
+-------------------
+- Modified tween.py to include host and port when creating a zipkin span.
+
 0.19.0 (2017-06-01)
 -------------------
 - Added zipkin.always_emit_zipkin_headers config flag.
