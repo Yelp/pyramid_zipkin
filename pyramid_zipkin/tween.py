@@ -17,7 +17,7 @@ ZipkinSettings = namedtuple('ZipkinSettings', [
     'add_logging_annotation',
     'report_root_timestamp',
     'host',
-    'port'
+    'port',
 ])
 
 
@@ -75,7 +75,7 @@ def _get_settings_from_request(request):
     else:
         report_root_timestamp = 'X-B3-TraceId' not in request.headers
     zipkin_host = settings.get('zipkin.host')
-    zipkin_port = settings.get('zipkin.port') or request.server_port
+    zipkin_port = settings.get('zipkin.port', request.server_port)
     return ZipkinSettings(
         zipkin_attrs,
         transport_handler,
@@ -84,7 +84,7 @@ def _get_settings_from_request(request):
         add_logging_annotation,
         report_root_timestamp,
         zipkin_host,
-        zipkin_port
+        zipkin_port,
     )
 
 

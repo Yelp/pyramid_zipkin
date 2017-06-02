@@ -86,12 +86,12 @@ zipkin.blacklisted_routes
 
 zipkin.host
 ~~~~~~~~~~~~~~~~~~
-    The host ip that the zipkin trace will include in its report.
+    The host ip that is used for zipkin spans.
 
 
 zipkin.port
 ~~~~~~~~~~~~~~~~~~
-    The port that the zipkin trace will include in its report.
+    The port that is used for zipkin spans.
 
 
 zipkin.stream_name
