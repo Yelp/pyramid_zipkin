@@ -8,7 +8,6 @@ from py_zipkin.util import generate_random_64bit_string
 from py_zipkin.zipkin import ZipkinAttrs
 from pyramid.interfaces import IRoutesMapper
 
-
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5
 
 
@@ -167,6 +166,8 @@ def get_binary_annotations(request, response):
         'http.uri.qs': request.path_qs,
         'response_status_code': str(response.status_code),
     }
+    if 'version' in request.registry:
+        annotations['version_SHA'] = request.registry.get('version')
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:
         annotations.update(
