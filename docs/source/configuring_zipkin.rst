@@ -84,6 +84,16 @@ zipkin.blacklisted_routes
         'zipkin.blacklisted_routes': ['some_internal_route',]
 
 
+zipkin.host
+~~~~~~~~~~~~~~~~~~
+    The host ip that the zipkin trace will include in its report.
+
+
+zipkin.port
+~~~~~~~~~~~~~~~~~~
+    The port that the zipkin trace will include in its report.
+
+
 zipkin.stream_name
 ~~~~~~~~~~~~~~~~~~
     A log name to log Zipkin spans to. Defaults to 'zipkin'.
