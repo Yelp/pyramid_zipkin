@@ -162,6 +162,6 @@ def test_add_logging_annotation(thrift_obj):
     server_span = thrift_obj.call_args[0][0]
     # Just make sure py-zipkin added an annotation for when logging started
     assert any(
-        annotation.value == 'py_zipkin.logging_start'
+        annotation.value == 'py_zipkin.logging_end'
         for annotation in server_span.annotations
     )
