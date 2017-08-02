@@ -21,7 +21,9 @@ def test_sample_server_span_with_100_percent_tracing(
 
     old_time = time.time() * 1000000
 
-    def validate_span(span_obj):
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        span_obj = span_objs[0]
         result_span = test_helper.massage_result_span(span_obj)
         timestamps = test_helper.get_timestamps(result_span)
         get_span['trace_id'] = unsigned_hex_to_signed_int(
@@ -54,7 +56,9 @@ def test_upstream_zipkin_headers_sampled(thrift_obj, default_trace_id_generator)
     span_hex = 'bbbbbbbbbbbbbbbb'
     parent_hex = 'cccccccccccccccc'
 
-    def validate(span):
+    def validate(span_objs):
+        assert len(span_objs) == 1
+        span = span_objs[0]
         assert span.trace_id == unsigned_hex_to_signed_int(trace_hex)
         assert span.id == unsigned_hex_to_signed_int(span_hex)
         assert span.parent_id == unsigned_hex_to_signed_int(parent_hex)
@@ -135,7 +139,10 @@ def test_server_extra_annotations_are_included(
     WebTestApp(main({}, **settings)).get('/sample_v2', status=200)
 
     assert thrift_obj.call_count == 1
-    server_span = thrift_obj.call_args[0][0]
+    server_spans = thrift_obj.call_args[0][0]
+    assert len(server_spans) == 1
+    server_span = server_spans[0]
+
     # Assert that the annotations logged via debug statements exist
     test_helper.assert_extra_annotations(
         server_span,
@@ -158,7 +165,9 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
         'other_attr': '42',
     }
 
-    def validate_span(span_obj):
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        span_obj = span_objs[0]
         # Assert that the only present binary_annotations are ones we expect
         expected_annotations = {
             'http.uri': '/sample',
@@ -204,7 +213,8 @@ def test_report_root_timestamp(thrift_obj, default_trace_id_generator):
 
     old_time = time.time() * 1000000
 
-    def check_for_timestamp_and_duration(span_obj):
+    def check_for_timestamp_and_duration(span_objs):
+        span_obj = span_objs[0]
         assert span_obj.timestamp > old_time
         assert span_obj.duration > 0
 
@@ -219,7 +229,9 @@ def test_host_and_port_in_span(thrift_obj, default_trace_id_generator):
         'zipkin.port': 1231,
     }
 
-    def validate_span(span_obj):
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        span_obj = span_objs[0]
         # Assert ipv4 and port match what we expect
         expected_ipv4 = (1 << 24) | (2 << 16) | (2 << 8) | 1
         assert expected_ipv4 == span_obj.annotations[0].host.ipv4

@@ -11,9 +11,9 @@ def default_trace_id_generator(dummy_request):
 @pytest.fixture
 def thrift_obj():
     with mock.patch(
-        'py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True
-    ) as mock_thrift_obj:
-        yield mock_thrift_obj
+        'py_zipkin.logging_helper.thrift_objs_in_bytes', autospec=True
+    ) as mock_thrift_objs:
+        yield mock_thrift_objs
 
 
 @pytest.fixture
