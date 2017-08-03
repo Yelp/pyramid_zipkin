@@ -6,7 +6,6 @@ from tests.acceptance.test_helper import assert_extra_annotations
 from tests.acceptance.test_helper import assert_extra_binary_annotations
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_log_new_client_spans(
     thrift_obj,
     default_trace_id_generator
@@ -20,11 +19,14 @@ def test_log_new_client_spans(
 
     WebTestApp(main({}, **settings)).get('/sample_v2_client', status=200)
 
-    # Ugly extraction of spans from mock thrift_obj call args
-    foo_span_args, bar_span_args, server_span_args = thrift_obj.call_args_list
-    foo_span = foo_span_args[0][0]
-    bar_span = bar_span_args[0][0]
-    server_span = server_span_args[0][0]
+    # Spans are batched as a list
+    assert thrift_obj.call_count == 1
+    span_list = thrift_obj.call_args[0][0]
+    assert len(span_list) == 3
+    foo_span = span_list[0]
+    bar_span = span_list[1]
+    server_span = span_list[2]
+
     # Some sanity checks on the new client spans
     for client_span in (foo_span, bar_span):
         assert client_span.parent_id == server_span.id
@@ -83,7 +85,6 @@ def _assert_headers_present(settings, is_sampled):
     assert expected == headers_json
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_span_context(
     thrift_obj,
     default_trace_id_generator
@@ -97,12 +98,15 @@ def test_span_context(
 
     WebTestApp(main({}, **settings)).get('/span_context', status=200)
 
-    # Ugly extraction of spans from mock thrift_obj call args
+    # Spans are batched
     # The order of span logging goes from innermost (grandchild) up.
-    gc_span_args, child_span_args, server_span_args = thrift_obj.call_args_list
-    child_span = child_span_args[0][0]
-    grandchild_span = gc_span_args[0][0]
-    server_span = server_span_args[0][0]
+    assert thrift_obj.call_count == 1
+    span_list = thrift_obj.call_args[0][0]
+    assert len(span_list) == 3
+    grandchild_span = span_list[0]
+    child_span = span_list[1]
+    server_span = span_list[2]
+
     # Assert proper hierarchy
     assert child_span.parent_id == server_span.id
     assert grandchild_span.parent_id == child_span.id
@@ -128,7 +132,6 @@ def test_span_context(
     assert annotations['ss'] == annotations['cr']
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_decorator(
     thrift_obj,
     default_trace_id_generator
@@ -143,23 +146,30 @@ def test_decorator(
     WebTestApp(main({}, **settings)).get('/decorator_context', status=200)
 
     # Two spans are logged - child span, then server span
-    child_span_args, server_span_args = thrift_obj.call_args_list
-    child_span = child_span_args[0][0]
-    server_span = server_span_args[0][0]
+    assert thrift_obj.call_count == 1
+    span_list = thrift_obj.call_args[0][0]
+    assert len(span_list) == 2
+    child_span = span_list[0]
+    server_span = span_list[1]
+
     # Assert proper hierarchy and annotations
     assert child_span.parent_id == server_span.id
     assert_extra_binary_annotations(child_span, {'a': '1'})
     assert child_span.name == 'my_span'
 
 
-@mock.patch('py_zipkin.logging_helper.thrift_obj_in_bytes', autospec=True)
 def test_add_logging_annotation(thrift_obj):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.add_logging_annotation': True,
     }
     WebTestApp(main({}, **settings)).get('/sample', status=200)
-    server_span = thrift_obj.call_args[0][0]
+
+    assert thrift_obj.call_count == 1
+    span_list = thrift_obj.call_args[0][0]
+    assert len(span_list) == 1
+    server_span = span_list[0]
+
     # Just make sure py-zipkin added an annotation for when logging started
     assert any(
         annotation.value == 'py_zipkin.logging_end'
