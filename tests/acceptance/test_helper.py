@@ -46,6 +46,6 @@ def assert_extra_annotations(span, annotations):
 def assert_extra_binary_annotations(span, binary_annotations):
     seen_extra_binary_annotations = dict(
         (ann.key, ann.value) for ann in span.binary_annotations
-        if ann.key not in ('http.uri', 'http.uri.qs', 'response_status_code')
+        if ann.key not in ('http.uri', 'http_uri_qs', 'response_status_code')
     )
     assert binary_annotations == seen_extra_binary_annotations

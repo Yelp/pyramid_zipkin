@@ -145,7 +145,7 @@ zipkin.set_extra_binary_annotations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     A method that takes `request` and `response` objects as parameters
     and produces extra binary annotations. If this config is omitted,
-    only `http.uri` and `http.uri.qs` are added as binary annotations.
+    only `http.uri` and `http_uri_qs` are added as binary annotations.
     The return value of the callback must be a dictionary, and all keys
     and values must be in `str` format. Example:
 
@@ -165,6 +165,11 @@ zipkin.always_emit_zipkin_headers
     Set to False if you're really concerned with performance as it'll save you
     about 300us on every non-traced request.
 
+zipkin.set_old_http_uri_qs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Adds http.uri.qs to binary annotation (for backward compatibility). If
+    turned on, requests made to Zipkin ES SPAN2 will be rejected.
+    Defaults to False.
 
 Configuring your application
 ----------------------------
