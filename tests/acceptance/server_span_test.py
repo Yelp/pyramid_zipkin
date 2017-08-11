@@ -186,6 +186,7 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
 
     assert thrift_obj.call_count == 1
 
+
 def test_binary_annotations_old_qs(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,

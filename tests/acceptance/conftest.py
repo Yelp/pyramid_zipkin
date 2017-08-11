@@ -43,6 +43,7 @@ def uri_binary_annotation(host):
 def uri_qs_binary_annotation(host):
     return {'key': 'http_uri_qs', 'host': host, 'annotation_type': 6}
 
+
 @pytest.fixture
 def uri_qs_binary_annotation_old(host):
     return {'key': 'http.uri.qs', 'host': host, 'annotation_type': 6}
