@@ -171,9 +171,39 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
         # Assert that the only present binary_annotations are ones we expect
         expected_annotations = {
             'http.uri': '/sample',
-            'http.uri.qs': '/sample?test=1',
+            'http_uri_qs': '/sample?test=1',
             'response_status_code': '200',
             'other': '42',
+        }
+        result_span = test_helper.massage_result_span(span_obj)
+        for ann in result_span['binary_annotations']:
+            assert ann['value'] == expected_annotations.pop(ann['key'])
+        assert len(expected_annotations) == 0
+
+    thrift_obj.side_effect = validate_span
+
+    WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
+
+    assert thrift_obj.call_count == 1
+
+
+def test_binary_annotations_old_qs(thrift_obj, default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+        'zipkin.set_old_http_uri_qs': True,
+        'other_attr': '42',
+    }
+
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        span_obj = span_objs[0]
+        # Assert that the only present binary_annotations are ones we expect
+        expected_annotations = {
+            'http.uri': '/sample',
+            'http_uri_qs': '/sample?test=1',
+            'http.uri.qs': '/sample?test=1',
+            'response_status_code': '200',
         }
         result_span = test_helper.massage_result_span(span_obj)
         for ann in result_span['binary_annotations']:

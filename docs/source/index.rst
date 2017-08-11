@@ -10,7 +10,7 @@ Features include:
 
 * ``zipkin_tracing_percent`` to control the percentage of requests getting sampled.
 
-* Adds ``http.uri``, ``http.uri.qs``, and ``status_code`` binary annotations automatically for each trace.
+* Adds ``http.uri``, ``http_uri_qs``, and ``status_code`` binary annotations automatically for each trace.
 
 * Allows configuration of additional arbitrary binary annotations.
 
