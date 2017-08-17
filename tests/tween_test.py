@@ -10,7 +10,7 @@ def test_zipkin_tween_sampling(
     mock_span,
     dummy_request,
     dummy_response,
-    is_tracing
+    is_tracing,
 ):
     """
     We should enter py_zipkin context manager and
