@@ -19,7 +19,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyramid_zipkin'
-copyright = u'2016, Yelp, Inc'
+copyright = u'2017, Yelp, Inc'
 
 exclude_patterns = []
 
