@@ -1,3 +1,7 @@
+0.19.2 (2017-08-17)
+-------------------
+- Trace context is again propagated for non-sampled requests.
+
 0.19.1 (2017-06-02)
 -------------------
 - Modified tween.py to include host and port when creating a zipkin span.
