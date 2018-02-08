@@ -242,3 +242,41 @@ def test_host_and_port_in_span(thrift_obj, default_trace_id_generator):
     WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
 
     assert thrift_obj.call_count == 1
+
+
+def test_sample_server_span_with_firehose_tracing(
+        thrift_obj, default_trace_id_generator, get_span):
+    settings = {
+        'zipkin.tracing_percent': 0,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+        'zipkin.firehose_handler': default_trace_id_generator,
+    }
+
+    old_time = time.time() * 1000000
+
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        span_obj = span_objs[0]
+        result_span = test_helper.massage_result_span(span_obj)
+        timestamps = test_helper.get_timestamps(result_span)
+        get_span['trace_id'] = unsigned_hex_to_signed_int(
+            default_trace_id_generator(span_obj),
+        )
+        # The request to this service had no incoming Zipkin headers, so it's
+        # assumed to be the root span of a trace, which means it logs
+        # timestamp and duration.
+        assert result_span.pop('timestamp') > old_time
+        assert result_span.pop('duration') > 0
+        assert get_span == result_span
+        assert old_time <= timestamps['sr']
+        assert timestamps['sr'] <= timestamps['ss']
+
+    thrift_obj.side_effect = validate_span
+
+    with mock.patch(
+        'pyramid_zipkin.request_helper.generate_random_64bit_string'
+    ) as mock_generate_random_64bit_string:
+        mock_generate_random_64bit_string.return_value = '1'
+        WebTestApp(main({}, **settings)).get('/sample', status=200)
+
+    assert thrift_obj.call_count == 1

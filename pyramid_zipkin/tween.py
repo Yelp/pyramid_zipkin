@@ -9,7 +9,7 @@ from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
 
 
-ZipkinSettings = namedtuple('ZipkinSettings', [
+_ZipkinSettings = namedtuple('ZipkinSettings', [
     'zipkin_attrs',
     'transport_handler',
     'service_name',
@@ -18,6 +18,7 @@ ZipkinSettings = namedtuple('ZipkinSettings', [
     'report_root_timestamp',
     'host',
     'port',
+    'firehose_handler',
 ])
 
 
@@ -40,6 +41,10 @@ def _get_settings_from_request(request):
         will set its timestamp and duration attributes. Use this only if this
         service is not going to have a corresponding client span. See
         https://github.com/Yelp/pyramid_zipkin/issues/68
+    zipkin.firehose_handler: [EXPERIMENTAL] this enables "firehose tracing",
+        which will log 100% of the spans to this handler, regardless of
+        sampling decision. This is experimental and may change or be removed
+        at any time without warning.
     """
     settings = request.registry.settings
 
@@ -76,7 +81,8 @@ def _get_settings_from_request(request):
         report_root_timestamp = 'X-B3-TraceId' not in request.headers
     zipkin_host = settings.get('zipkin.host')
     zipkin_port = settings.get('zipkin.port', request.server_port)
-    return ZipkinSettings(
+    firehose_handler = settings.get('zipkin.firehose_handler', None)
+    return _ZipkinSettings(
         zipkin_attrs,
         transport_handler,
         service_name,
@@ -85,6 +91,7 @@ def _get_settings_from_request(request):
         report_root_timestamp,
         zipkin_host,
         zipkin_port,
+        firehose_handler
     )
 
 
@@ -106,7 +113,7 @@ def zipkin_tween(handler, registry):
     def tween(request):
         zipkin_settings = _get_settings_from_request(request)
 
-        with zipkin_span(
+        tween_kwargs = dict(
             service_name=zipkin_settings.service_name,
             span_name=zipkin_settings.span_name,
             zipkin_attrs=zipkin_settings.zipkin_attrs,
@@ -115,7 +122,12 @@ def zipkin_tween(handler, registry):
             port=zipkin_settings.port,
             add_logging_annotation=zipkin_settings.add_logging_annotation,
             report_root_timestamp=zipkin_settings.report_root_timestamp,
-        ) as zipkin_context:
+        )
+
+        if zipkin_settings.firehose_handler is not None:
+            tween_kwargs['firehose_handler'] = zipkin_settings.firehose_handler
+
+        with zipkin_span(**tween_kwargs) as zipkin_context:
             response = handler(request)
             zipkin_context.update_binary_annotations(
                 get_binary_annotations(request, response),

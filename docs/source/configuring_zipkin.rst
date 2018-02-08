@@ -166,6 +166,16 @@ zipkin.always_emit_zipkin_headers
     about 300us on every non-traced request.
 
 
+zipkin.firehose_handler [EXPERIMENTAL]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    `Requires py_zipkin >= 0.11.0`
+
+    Callback function for "firehose tracing" mode. This will log 100% of the
+    spans to this handler, regardless of sampling decision.
+
+    This is experimental and may change or be removed at any time without warning.
+
+
 Configuring your application
 ----------------------------
 
