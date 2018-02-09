@@ -1,3 +1,7 @@
+0.20.0 (2018-02-09)
+-------------------
+- Added support for using a request-specific stack for storing zipkin attributes.
+
 0.19.2 (2017-08-17)
 -------------------
 - Trace context is again propagated for non-sampled requests.
