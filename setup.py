@@ -21,9 +21,6 @@ setup(
         'pyramid',
         'six',
     ],
-    tests_require=[
-        'py_zipkin >= 0.11.0',
-    ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
