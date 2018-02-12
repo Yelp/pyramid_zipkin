@@ -2,11 +2,26 @@
 import functools
 from collections import namedtuple
 
+import py_zipkin.stack
 from py_zipkin.exception import ZipkinError
 from py_zipkin.zipkin import zipkin_span
 
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
+
+
+def _getattr_path(obj, path):
+    """
+    getattr for a dot separated path
+
+    If an AttributeError is raised, it will return None.
+    """
+    if not path:
+        return None
+
+    for attr in path.split('.'):
+        obj = getattr(obj, attr, None)
+    return obj
 
 
 _ZipkinSettings = namedtuple('ZipkinSettings', [
@@ -18,6 +33,7 @@ _ZipkinSettings = namedtuple('ZipkinSettings', [
     'report_root_timestamp',
     'host',
     'port',
+    'context_stack',
     'firehose_handler',
 ])
 
@@ -65,6 +81,10 @@ def _get_settings_from_request(request):
             " and a message as params and logs the message via scribe/kafka."
         )
 
+    context_stack = _getattr_path(request, settings.get('zipkin.request_context'))
+    if context_stack is None:
+        context_stack = py_zipkin.stack.ThreadLocalStack()
+
     service_name = settings.get('service_name', 'unknown')
     span_name = '{0} {1}'.format(request.method, request.path)
     add_logging_annotation = settings.get(
@@ -91,7 +111,8 @@ def _get_settings_from_request(request):
         report_root_timestamp,
         zipkin_host,
         zipkin_port,
-        firehose_handler
+        context_stack,
+        firehose_handler,
     )
 
 
@@ -122,6 +143,7 @@ def zipkin_tween(handler, registry):
             port=zipkin_settings.port,
             add_logging_annotation=zipkin_settings.add_logging_annotation,
             report_root_timestamp=zipkin_settings.report_root_timestamp,
+            context_stack=zipkin_settings.context_stack,
         )
 
         if zipkin_settings.firehose_handler is not None:

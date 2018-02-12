@@ -3,7 +3,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.19.2'
+__version__ = '0.20.0'
 
 setup(
     name='pyramid_zipkin',
@@ -17,7 +17,7 @@ setup(
     packages=find_packages(exclude=('tests*',)),
     package_data={'': ['*.thrift']},
     install_requires=[
-        'py_zipkin >= 0.8.1',
+        'py_zipkin >= 0.10.1',
         'pyramid',
         'six',
     ],

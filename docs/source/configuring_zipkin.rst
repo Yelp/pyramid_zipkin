@@ -166,7 +166,22 @@ zipkin.always_emit_zipkin_headers
     about 300us on every non-traced request.
 
 
-zipkin.firehose_handler [EXPERIMENTAL]
+zipkin.request_context
+~~~~~~~~~~~~~~~~~~~~~~
+    If it contains a valid request attribute, this specifies the stack
+    for storing the zipin attributes. If the name is invalid or the option
+    is missing, attributes will be stored in a thread local context.
+    The syntax is a path in dotted notation, e.g. 'request.context.zipkin'.
+
+    This option enables support for an cooperative multithreading environment
+    (e.g. asyncio).
+
+    .. code-block:: python
+
+    settings['zipkin.request_context'] = 'request.context.zipkin'
+
+
+    zipkin.firehose_handler [EXPERIMENTAL]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     `Requires py_zipkin >= 0.11.0`
 
