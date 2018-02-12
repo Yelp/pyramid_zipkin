@@ -39,4 +39,4 @@ In your service's webapp, you need to include:
 License
 -------
 
-Copyright (c) 2017, Yelp, Inc. All rights reserved. Apache v2
+Copyright (c) 2018, Yelp, Inc. All rights reserved. Apache v2

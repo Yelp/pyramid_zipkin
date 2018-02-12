@@ -11,7 +11,7 @@ setup(
     provides=["pyramid_zipkin"],
     author='Yelp, Inc.',
     author_email='opensource+pyramid-zipkin@yelp.com',
-    license='Copyright Yelp 2017',
+    license='Copyright Yelp 2018',
     url="https://github.com/Yelp/pyramid_zipkin",
     description='Zipkin instrumentation for the Pyramid framework.',
     packages=find_packages(exclude=('tests*',)),
