@@ -1,3 +1,7 @@
+0.20.0 (2018-02-13)
+-------------------
+- Added support for experimental firehose mode
+
 0.20.0 (2018-02-09)
 -------------------
 - Added support for using a request-specific stack for storing zipkin attributes.
