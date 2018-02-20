@@ -1,3 +1,7 @@
+0.20.2 (2018-02-20)
+-------------------
+- Require py_zipkin >= 0.11.0
+
 0.20.1 (2018-02-13)
 -------------------
 - Added support for experimental firehose mode
