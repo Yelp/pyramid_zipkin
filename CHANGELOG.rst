@@ -1,4 +1,4 @@
-0.20.0 (2018-02-13)
+0.20.1 (2018-02-13)
 -------------------
 - Added support for experimental firehose mode
 
