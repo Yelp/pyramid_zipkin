@@ -178,13 +178,11 @@ zipkin.request_context
 
     .. code-block:: python
 
-    settings['zipkin.request_context'] = 'request.context.zipkin'
+        settings['zipkin.request_context'] = 'request.context.zipkin'
 
 
-    zipkin.firehose_handler [EXPERIMENTAL]
+zipkin.firehose_handler [EXPERIMENTAL]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    `Requires py_zipkin >= 0.11.0`
-
     Callback function for "firehose tracing" mode. This will log 100% of the
     spans to this handler, regardless of sampling decision.
 
