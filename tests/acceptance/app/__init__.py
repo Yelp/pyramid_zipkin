@@ -80,6 +80,11 @@ def decorator_context(dummy_request):
     return {'result': some_function(1, 2)}
 
 
+@view_config(route_name='pattern_route', renderer='json')
+def pattern_route(dummy_request):
+    return {'result': dummy_request.matchdict['petId']}
+
+
 @view_config(route_name='sample_route_child_span', renderer='json')
 def sample_child_span(dummy_request):
     return create_http_headers_for_new_span()
@@ -112,6 +117,7 @@ def main(global_config, **settings):
     config.add_route('sample_route_child_span', '/sample_child_span')
     config.add_route('span_context', '/span_context')
     config.add_route('decorator_context', '/decorator_context')
+    config.add_route('pattern_route', '/pet/{petId}')
 
     config.add_route('server_error', '/server_error')
     config.add_route('client_error', '/client_error')

@@ -162,9 +162,12 @@ def get_binary_annotations(request, response):
     :param response: the Pyramid response object
     :returns: binary annotation dict of {str: str}
     """
+    route = request.matched_route.pattern if request.matched_route else ''
+
     annotations = {
         'http.uri': request.path,
         'http.uri.qs': request.path_qs,
+        'http.route': route,
         'response_status_code': str(response.status_code),
     }
     settings = request.registry.settings

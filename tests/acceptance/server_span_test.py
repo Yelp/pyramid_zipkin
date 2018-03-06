@@ -170,8 +170,9 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
         span_obj = span_objs[0]
         # Assert that the only present binary_annotations are ones we expect
         expected_annotations = {
-            'http.uri': '/sample',
-            'http.uri.qs': '/sample?test=1',
+            'http.uri': '/pet/123',
+            'http.uri.qs': '/pet/123?test=1',
+            'http.route': '/pet/{petId}',
             'response_status_code': '200',
             'other': '42',
         }
@@ -182,7 +183,7 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
 
     thrift_obj.side_effect = validate_span
 
-    WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
+    WebTestApp(main({}, **settings)).get('/pet/123?test=1', status=200)
 
     assert thrift_obj.call_count == 1
 

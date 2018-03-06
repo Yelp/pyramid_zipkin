@@ -45,6 +45,11 @@ def uri_qs_binary_annotation(host):
 
 
 @pytest.fixture
+def route_binary_annotation(host):
+    return {'key': 'http.route', 'host': host, 'annotation_type': 6}
+
+
+@pytest.fixture
 def response_status_code_annotation(host):
     return {'key': 'response_status_code', 'host': host, 'annotation_type': 6}
 
@@ -54,6 +59,7 @@ def get_span(
     annotation,
     uri_binary_annotation,
     uri_qs_binary_annotation,
+    route_binary_annotation,
     response_status_code_annotation,
 ):
     sr_annotation = annotation.copy()
@@ -64,6 +70,7 @@ def get_span(
 
     uri_binary_annotation['value'] = '/sample'
     uri_qs_binary_annotation['value'] = '/sample'
+    route_binary_annotation['value'] = '/sample'
 
     response_status_code_annotation['value'] = '200'
 
@@ -74,11 +81,15 @@ def get_span(
                 [sr_annotation, ss_annotation],
                 key=lambda ann: ann['value'],
             ),
-            'binary_annotations': [
-                uri_binary_annotation,
-                uri_qs_binary_annotation,
-                response_status_code_annotation,
-            ],
+            'binary_annotations': sorted(
+                [
+                    uri_binary_annotation,
+                    uri_qs_binary_annotation,
+                    route_binary_annotation,
+                    response_status_code_annotation,
+                ],
+                key=lambda bann: bann['key'],
+            ),
             'name': 'GET /sample',
             # An optional field for 128-bit trace IDs that py-zipkin doesn't
             # set. See https://github.com/Yelp/py_zipkin/issues/28
