@@ -1,3 +1,7 @@
+0.20.3 (2018-03-08)
+-------------------
+- Add max_span_batch_size to the zipkin tween settings.
+
 0.20.2 (2018-02-20)
 -------------------
 - Require py_zipkin >= 0.11.0
