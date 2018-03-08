@@ -280,3 +280,35 @@ def test_sample_server_span_with_firehose_tracing(
         WebTestApp(main({}, **settings)).get('/sample', status=200)
 
     assert thrift_obj.call_count == 1
+
+
+def test_max_span_batch_size(
+    thrift_obj,
+    default_trace_id_generator,
+):
+    firehose_handler = mock.Mock()
+    settings = {
+        'zipkin.tracing_percent': 0,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+        'zipkin.firehose_handler': firehose_handler,
+        'zipkin.max_span_batch_size': 1,
+    }
+
+    WebTestApp(main({}, **settings)).get('/decorator_context', status=200)
+
+    # Assert the expected number of batches for two spans
+    assert thrift_obj.call_count == 2
+    assert len(thrift_obj.call_args_list) == 2
+    assert firehose_handler.call_count == 2
+
+    # Assert proper hierarchy
+    batch_one = thrift_obj.call_args_list[0][0]
+    assert len(batch_one) == 1
+    child_span = batch_one[0][0]
+
+    batch_two = thrift_obj.call_args_list[1][0]
+    assert len(batch_two) == 1
+    server_span = batch_two[0][0]
+
+    assert child_span.parent_id == server_span.id
+    assert child_span.name == 'my_span'

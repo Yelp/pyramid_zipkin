@@ -35,6 +35,7 @@ _ZipkinSettings = namedtuple('ZipkinSettings', [
     'port',
     'context_stack',
     'firehose_handler',
+    'max_span_batch_size',
 ])
 
 
@@ -91,6 +92,7 @@ def _get_settings_from_request(request):
         'zipkin.add_logging_annotation',
         False,
     )
+
     # If the incoming request doesn't have Zipkin headers, this request is
     # assumed to be the root span of a trace. There's also a configuration
     # override to allow services to write their own logic for reporting
@@ -101,7 +103,8 @@ def _get_settings_from_request(request):
         report_root_timestamp = 'X-B3-TraceId' not in request.headers
     zipkin_host = settings.get('zipkin.host')
     zipkin_port = settings.get('zipkin.port', request.server_port)
-    firehose_handler = settings.get('zipkin.firehose_handler', None)
+    firehose_handler = settings.get('zipkin.firehose_handler')
+    max_span_batch_size = settings.get('zipkin.max_span_batch_size')
     return _ZipkinSettings(
         zipkin_attrs,
         transport_handler,
@@ -113,6 +116,7 @@ def _get_settings_from_request(request):
         zipkin_port,
         context_stack,
         firehose_handler,
+        max_span_batch_size,
     )
 
 
@@ -144,6 +148,7 @@ def zipkin_tween(handler, registry):
             add_logging_annotation=zipkin_settings.add_logging_annotation,
             report_root_timestamp=zipkin_settings.report_root_timestamp,
             context_stack=zipkin_settings.context_stack,
+            max_span_batch_size=zipkin_settings.max_span_batch_size,
         )
 
         if zipkin_settings.firehose_handler is not None:
