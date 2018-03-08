@@ -103,8 +103,8 @@ def _get_settings_from_request(request):
         report_root_timestamp = 'X-B3-TraceId' not in request.headers
     zipkin_host = settings.get('zipkin.host')
     zipkin_port = settings.get('zipkin.port', request.server_port)
-    firehose_handler = settings.get('zipkin.firehose_handler', None)
-    max_span_batch_size = settings.get('zipkin.max_span_batch_size', None)
+    firehose_handler = settings.get('zipkin.firehose_handler')
+    max_span_batch_size = settings.get('zipkin.max_span_batch_size')
     return _ZipkinSettings(
         zipkin_attrs,
         transport_handler,
