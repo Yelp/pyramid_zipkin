@@ -1,3 +1,7 @@
+0.21.0 (2018-03-09)
+-------------------
+- Added support for http.route annotation
+
 0.20.3 (2018-03-08)
 -------------------
 - Add max_span_batch_size to the zipkin tween settings.
