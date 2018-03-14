@@ -4,7 +4,7 @@ from py_zipkin.zipkin import create_http_headers_for_new_span
 from py_zipkin.zipkin import zipkin_span
 from pyramid.config import Configurator
 from pyramid.response import Response
-from pyramid.tweens import MAIN
+from pyramid.tweens import EXCVIEW
 from pyramid.view import view_config
 
 
@@ -124,6 +124,6 @@ def main(global_config, **settings):
 
     config.scan()
 
-    config.add_tween('pyramid_zipkin.tween.zipkin_tween', over=MAIN)
+    config.add_tween('pyramid_zipkin.tween.zipkin_tween', over=EXCVIEW)
 
     return config.make_wsgi_app()

@@ -188,6 +188,34 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
     assert thrift_obj.call_count == 1
 
 
+def test_binary_annotations_404(thrift_obj, default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        span_obj = span_objs[0]
+        # Assert that the only present binary_annotations are ones we expect
+        expected_annotations = {
+            'http.uri': '/abcd',
+            'http.uri.qs': '/abcd?test=1',
+            'http.route': '',
+            'response_status_code': '404',
+        }
+        result_span = test_helper.massage_result_span(span_obj)
+        for ann in result_span['binary_annotations']:
+            assert ann['value'] == expected_annotations.pop(ann['key'])
+        assert len(expected_annotations) == 0
+
+    thrift_obj.side_effect = validate_span
+
+    WebTestApp(main({}, **settings)).get('/abcd?test=1', status=404)
+
+    assert thrift_obj.call_count == 1
+
+
 def test_custom_create_zipkin_attr(thrift_obj, default_trace_id_generator):
     custom_create_zipkin_attr = mock.Mock(return_value=ZipkinAttrs(
         trace_id='1234',
