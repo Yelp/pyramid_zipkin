@@ -4,24 +4,25 @@ from webtest import TestApp as WebTestApp
 from .app import main
 from tests.acceptance.test_helper import assert_extra_annotations
 from tests.acceptance.test_helper import assert_extra_binary_annotations
+from tests.acceptance.test_helper import MockTransport
+from tests.acceptance.test_helper import decode_thrift
 
 
-def test_log_new_client_spans(
-    thrift_obj,
-    default_trace_id_generator
-):
+def test_log_new_client_spans(default_trace_id_generator):
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    transport = MockTransport()
+    app_main = main({}, **settings)
+    app_main.registry.settings['zipkin.transport_handler'] = transport
 
-    WebTestApp(main({}, **settings)).get('/sample_v2_client', status=200)
+    WebTestApp(app_main).get('/sample_v2_client', status=200)
 
-    # Spans are batched as a list
-    assert thrift_obj.call_count == 1
-    span_list = thrift_obj.call_args[0][0]
+    assert len(transport.output) == 1
+    span_list = decode_thrift(transport.output[0])
     assert len(span_list) == 3
     foo_span = span_list[0]
     bar_span = span_list[1]
@@ -83,23 +84,23 @@ def _assert_headers_present(settings, is_sampled):
     assert expected == headers_json
 
 
-def test_span_context(
-    thrift_obj,
-    default_trace_id_generator
-):
+def test_span_context(default_trace_id_generator):
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    transport = MockTransport()
+    app_main = main({}, **settings)
+    app_main.registry.settings['zipkin.transport_handler'] = transport
 
-    WebTestApp(main({}, **settings)).get('/span_context', status=200)
+    WebTestApp(app_main).get('/span_context', status=200)
 
     # Spans are batched
     # The order of span logging goes from innermost (grandchild) up.
-    assert thrift_obj.call_count == 1
-    span_list = thrift_obj.call_args[0][0]
+    assert len(transport.output) == 1
+    span_list = decode_thrift(transport.output[0])
     assert len(span_list) == 3
     grandchild_span = span_list[0]
     child_span = span_list[1]
@@ -130,22 +131,22 @@ def test_span_context(
     assert annotations['ss'] == annotations['cr']
 
 
-def test_decorator(
-    thrift_obj,
-    default_trace_id_generator
-):
+def test_decorator(default_trace_id_generator):
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    transport = MockTransport()
+    app_main = main({}, **settings)
+    app_main.registry.settings['zipkin.transport_handler'] = transport
 
-    WebTestApp(main({}, **settings)).get('/decorator_context', status=200)
+    WebTestApp(app_main).get('/decorator_context', status=200)
 
     # Two spans are logged - child span, then server span
-    assert thrift_obj.call_count == 1
-    span_list = thrift_obj.call_args[0][0]
+    assert len(transport.output) == 1
+    span_list = decode_thrift(transport.output[0])
     assert len(span_list) == 2
     child_span = span_list[0]
     server_span = span_list[1]
@@ -156,15 +157,19 @@ def test_decorator(
     assert child_span.name == 'my_span'
 
 
-def test_add_logging_annotation(thrift_obj):
+def test_add_logging_annotation():
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.add_logging_annotation': True,
     }
-    WebTestApp(main({}, **settings)).get('/sample', status=200)
+    transport = MockTransport()
+    app_main = main({}, **settings)
+    app_main.registry.settings['zipkin.transport_handler'] = transport
 
-    assert thrift_obj.call_count == 1
-    span_list = thrift_obj.call_args[0][0]
+    WebTestApp(app_main).get('/sample', status=200)
+
+    assert len(transport.output) == 1
+    span_list = decode_thrift(transport.output[0])
     assert len(span_list) == 1
     server_span = span_list[0]
 

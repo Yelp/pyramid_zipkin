@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import functools
+import warnings
 from collections import namedtuple
 
 import py_zipkin.stack
 from py_zipkin.exception import ZipkinError
+from py_zipkin.transport import BaseTransportHandler
 from py_zipkin.zipkin import zipkin_span
 
 from pyramid_zipkin.request_helper import create_zipkin_attr
@@ -73,8 +75,14 @@ def _get_settings_from_request(request):
 
     if 'zipkin.transport_handler' in settings:
         transport_handler = settings['zipkin.transport_handler']
-        stream_name = settings.get('zipkin.stream_name', 'zipkin')
-        transport_handler = functools.partial(transport_handler, stream_name)
+        if not isinstance(transport_handler, BaseTransportHandler):
+            warnings.warn(
+                'Using a function as transport_handler is deprecated. '
+                'Please extend py_zipkin.transport.BaseTransportHandler',
+                DeprecationWarning,
+            )
+            stream_name = settings.get('zipkin.stream_name', 'zipkin')
+            transport_handler = functools.partial(transport_handler, stream_name)
     else:
         raise ZipkinError(
             "`zipkin.transport_handler` is a required config property, which"
