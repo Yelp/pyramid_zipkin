@@ -4,8 +4,8 @@ from webtest import TestApp as WebTestApp
 from .app import main
 from tests.acceptance.test_helper import assert_extra_annotations
 from tests.acceptance.test_helper import assert_extra_binary_annotations
-from tests.acceptance.test_helper import MockTransport
 from tests.acceptance.test_helper import decode_thrift
+from tests.acceptance.test_helper import generate_app_main
 
 
 def test_log_new_client_spans(default_trace_id_generator):
@@ -15,9 +15,7 @@ def test_log_new_client_spans(default_trace_id_generator):
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample_v2_client', status=200)
 
@@ -91,9 +89,7 @@ def test_span_context(default_trace_id_generator):
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/span_context', status=200)
 
@@ -138,9 +134,7 @@ def test_decorator(default_trace_id_generator):
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/decorator_context', status=200)
 
@@ -162,9 +156,7 @@ def test_add_logging_annotation():
         'zipkin.tracing_percent': 100,
         'zipkin.add_logging_annotation': True,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample', status=200)
 

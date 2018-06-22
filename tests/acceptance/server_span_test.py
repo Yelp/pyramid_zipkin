@@ -10,8 +10,8 @@ from webtest import TestApp as WebTestApp
 
 from .app import main
 from tests.acceptance import test_helper
-from tests.acceptance.test_helper import MockTransport
 from tests.acceptance.test_helper import decode_thrift
+from tests.acceptance.test_helper import generate_app_main
 
 
 def test_sample_server_span_with_100_percent_tracing(
@@ -22,9 +22,7 @@ def test_sample_server_span_with_100_percent_tracing(
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     old_time = time.time() * 1000000
 
@@ -56,10 +54,8 @@ def test_sample_server_span_with_100_percent_tracing(
 
 
 def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
-    transport = MockTransport()
     settings = {'zipkin.trace_id_generator': default_trace_id_generator}
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     trace_hex = 'aaaaaaaaaaaaaaaa'
     span_hex = 'bbbbbbbbbbbbbbbb'
@@ -97,9 +93,7 @@ def test_unsampled_request_has_no_span(default_trace_id_generator):
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample', status=200)
 
@@ -112,9 +106,7 @@ def test_blacklisted_route_has_no_span(default_trace_id_generator):
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_routes': ['sample_route'],
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample', status=200)
 
@@ -127,9 +119,7 @@ def test_blacklisted_path_has_no_span(default_trace_id_generator):
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_paths': [r'^/sample'],
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample', status=200)
 
@@ -150,9 +140,7 @@ def test_server_extra_annotations_are_included(default_trace_id_generator):
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample_v2', status=200)
 
@@ -182,9 +170,7 @@ def test_binary_annotations(default_trace_id_generator):
         'zipkin.set_extra_binary_annotations': set_extra_binary_annotations,
         'other_attr': '42',
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     def validate_span(span_objs):
         assert len(span_objs) == 1
@@ -213,9 +199,7 @@ def test_binary_annotations_404(default_trace_id_generator):
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     def validate_span(span_objs):
         assert len(span_objs) == 1
@@ -238,7 +222,7 @@ def test_binary_annotations_404(default_trace_id_generator):
     validate_span(decode_thrift(transport.output[0]))
 
 
-def test_custom_create_zipkin_attr(default_trace_id_generator):
+def test_custom_create_zipkin_attr():
     custom_create_zipkin_attr = mock.Mock(return_value=ZipkinAttrs(
         trace_id='1234',
         span_id='1234',
@@ -250,23 +234,19 @@ def test_custom_create_zipkin_attr(default_trace_id_generator):
     settings = {
         'zipkin.create_zipkin_attr': custom_create_zipkin_attr
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample?test=1', status=200)
 
     assert custom_create_zipkin_attr.called
 
 
-def test_report_root_timestamp(default_trace_id_generator):
+def test_report_root_timestamp():
     settings = {
         'zipkin.report_root_timestamp': True,
         'zipkin.tracing_percent': 100.0,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     old_time = time.time() * 1000000
 
@@ -281,15 +261,13 @@ def test_report_root_timestamp(default_trace_id_generator):
     check_for_timestamp_and_duration(decode_thrift(transport.output[0]))
 
 
-def test_host_and_port_in_span(default_trace_id_generator):
+def test_host_and_port_in_span():
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.host': '1.2.2.1',
         'zipkin.port': 1231,
     }
-    transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = transport
+    app_main, transport, _ = generate_app_main(settings)
 
     def validate_span(span_objs):
         assert len(span_objs) == 1
@@ -312,11 +290,10 @@ def test_sample_server_span_with_firehose_tracing(
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.firehose_handler': default_trace_id_generator,
     }
-    normal_transport = MockTransport()
-    firehose_transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = normal_transport
-    app_main.registry.settings['zipkin.firehose_handler'] = firehose_transport
+    app_main, normal_transport, firehose_transport = generate_app_main(
+        settings,
+        firehose=True,
+    )
 
     old_time = time.time() * 1000000
 
@@ -354,11 +331,10 @@ def test_max_span_batch_size(default_trace_id_generator):
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.max_span_batch_size': 1,
     }
-    normal_transport = MockTransport()
-    firehose_transport = MockTransport()
-    app_main = main({}, **settings)
-    app_main.registry.settings['zipkin.transport_handler'] = normal_transport
-    app_main.registry.settings['zipkin.firehose_handler'] = firehose_transport
+    app_main, normal_transport, firehose_transport = generate_app_main(
+        settings,
+        firehose=True,
+    )
 
     WebTestApp(app_main).get('/decorator_context', status=200)
 

@@ -5,6 +5,8 @@ from thriftpy.protocol.binary import read_list_begin
 from thriftpy.protocol.binary import TBinaryProtocol
 from thriftpy.transport import TMemoryBuffer
 
+from .app import main
+
 
 class MockTransport(BaseTransportHandler):
     def __init__(self, *argv, **kwargs):
@@ -28,6 +30,16 @@ def decode_thrift(encoded_spans):
         spans.append(span_obj)
 
     return spans
+
+
+def generate_app_main(settings, firehose=False):
+    normal_transport = MockTransport()
+    firehose_transport = MockTransport()
+    app_main = main({}, **settings)
+    app_main.registry.settings['zipkin.transport_handler'] = normal_transport
+    if firehose:
+        app_main.registry.settings['zipkin.firehose_handler'] = firehose_transport
+    return app_main, normal_transport, firehose_transport
 
 
 def get_timestamps(span):
