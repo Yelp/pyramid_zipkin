@@ -86,8 +86,8 @@ def _get_settings_from_request(request):
     else:
         raise ZipkinError(
             "`zipkin.transport_handler` is a required config property, which"
-            " is missing. It is a callback method which takes a log stream"
-            " and a message as params and logs the message via scribe/kafka."
+            " is missing. Have a look at py_zipkin's docs for how to implement"
+            " it: https://github.com/Yelp/py_zipkin#transport"
         )
 
     context_stack = _getattr_path(request, settings.get('zipkin.request_context'))
