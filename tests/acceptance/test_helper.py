@@ -1,4 +1,47 @@
 # -*- coding: utf-8 -*-
+from py_zipkin.thrift import zipkin_core
+from py_zipkin.transport import BaseTransportHandler
+from thriftpy.protocol.binary import read_list_begin
+from thriftpy.protocol.binary import TBinaryProtocol
+from thriftpy.transport import TMemoryBuffer
+
+from .app import main
+
+
+class MockTransport(BaseTransportHandler):
+    def __init__(self, *argv, **kwargs):
+        super(BaseTransportHandler, self).__init__(*argv, **kwargs)
+        self.output = []
+
+    def get_max_payload_bytes(self):
+        return None
+
+    def send(self, msg):
+        self.output.append(msg)
+
+
+def decode_thrift(encoded_spans):
+    spans = []
+    trans = TMemoryBuffer(encoded_spans)
+    _, size = read_list_begin(trans)
+    for _ in range(size):
+        span_obj = zipkin_core.Span()
+        span_obj.read(TBinaryProtocol(trans))
+        spans.append(span_obj)
+
+    return spans
+
+
+def generate_app_main(settings, firehose=False):
+    normal_transport = MockTransport()
+    firehose_transport = MockTransport()
+    app_main = main({}, **settings)
+    app_main.registry.settings['zipkin.transport_handler'] = normal_transport
+    if firehose:
+        app_main.registry.settings['zipkin.firehose_handler'] = firehose_transport
+    return app_main, normal_transport, firehose_transport
+
+
 def get_timestamps(span):
     timestamps = {}
     for ann in span['annotations']:

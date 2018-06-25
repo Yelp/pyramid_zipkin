@@ -10,14 +10,19 @@ from webtest import TestApp as WebTestApp
 
 from .app import main
 from tests.acceptance import test_helper
+from tests.acceptance.test_helper import decode_thrift
+from tests.acceptance.test_helper import generate_app_main
 
 
 def test_sample_server_span_with_100_percent_tracing(
-        thrift_obj, default_trace_id_generator, get_span):
+    default_trace_id_generator,
+    get_span,
+):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    app_main, transport, _ = generate_app_main(settings)
 
     old_time = time.time() * 1000000
 
@@ -38,19 +43,19 @@ def test_sample_server_span_with_100_percent_tracing(
         assert old_time <= timestamps['sr']
         assert timestamps['sr'] <= timestamps['ss']
 
-    thrift_obj.side_effect = validate_span
-
     with mock.patch(
         'pyramid_zipkin.request_helper.generate_random_64bit_string'
     ) as mock_generate_random_64bit_string:
         mock_generate_random_64bit_string.return_value = '1'
-        WebTestApp(main({}, **settings)).get('/sample', status=200)
+        WebTestApp(app_main).get('/sample', status=200)
 
-    assert thrift_obj.call_count == 1
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
 
 
-def test_upstream_zipkin_headers_sampled(thrift_obj, default_trace_id_generator):
+def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
     settings = {'zipkin.trace_id_generator': default_trace_id_generator}
+    app_main, transport, _ = generate_app_main(settings)
 
     trace_hex = 'aaaaaaaaaaaaaaaa'
     span_hex = 'bbbbbbbbbbbbbbbb'
@@ -68,9 +73,7 @@ def test_upstream_zipkin_headers_sampled(thrift_obj, default_trace_id_generator)
         assert span.timestamp is None
         assert span.duration is None
 
-    thrift_obj.side_effect = validate
-
-    WebTestApp(main({}, **settings)).get(
+    WebTestApp(app_main).get(
         '/sample',
         status=200,
         headers={
@@ -82,40 +85,45 @@ def test_upstream_zipkin_headers_sampled(thrift_obj, default_trace_id_generator)
         },
     )
 
+    validate(decode_thrift(transport.output[0]))
 
-def test_unsampled_request_has_no_span(thrift_obj, default_trace_id_generator):
+
+def test_unsampled_request_has_no_span(default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    app_main, transport, _ = generate_app_main(settings)
 
-    WebTestApp(main({}, **settings)).get('/sample', status=200)
+    WebTestApp(app_main).get('/sample', status=200)
 
-    assert thrift_obj.call_count == 0
+    assert len(transport.output) == 0
 
 
-def test_blacklisted_route_has_no_span(thrift_obj, default_trace_id_generator):
+def test_blacklisted_route_has_no_span(default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_routes': ['sample_route'],
     }
+    app_main, transport, _ = generate_app_main(settings)
 
-    WebTestApp(main({}, **settings)).get('/sample', status=200)
+    WebTestApp(app_main).get('/sample', status=200)
 
-    assert thrift_obj.call_count == 0
+    assert len(transport.output) == 0
 
 
-def test_blacklisted_path_has_no_span(thrift_obj, default_trace_id_generator):
+def test_blacklisted_path_has_no_span(default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_paths': [r'^/sample'],
     }
+    app_main, transport, _ = generate_app_main(settings)
 
-    WebTestApp(main({}, **settings)).get('/sample', status=200)
+    WebTestApp(app_main).get('/sample', status=200)
 
-    assert thrift_obj.call_count == 0
+    assert len(transport.output) == 0
 
 
 def test_no_transport_handler_throws_error():
@@ -127,19 +135,17 @@ def test_no_transport_handler_throws_error():
         WebTestApp(app_main).get('/sample', status=200)
 
 
-def test_server_extra_annotations_are_included(
-    thrift_obj,
-    default_trace_id_generator
-):
+def test_server_extra_annotations_are_included(default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    app_main, transport, _ = generate_app_main(settings)
 
-    WebTestApp(main({}, **settings)).get('/sample_v2', status=200)
+    WebTestApp(app_main).get('/sample_v2', status=200)
 
-    assert thrift_obj.call_count == 1
-    server_spans = thrift_obj.call_args[0][0]
+    assert len(transport.output) == 1
+    server_spans = decode_thrift(transport.output[0])
     assert len(server_spans) == 1
     server_span = server_spans[0]
 
@@ -154,7 +160,7 @@ def test_server_extra_annotations_are_included(
     )
 
 
-def test_binary_annotations(thrift_obj, default_trace_id_generator):
+def test_binary_annotations(default_trace_id_generator):
     def set_extra_binary_annotations(dummy_request, response):
         return {'other': dummy_request.registry.settings['other_attr']}
 
@@ -164,6 +170,7 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
         'zipkin.set_extra_binary_annotations': set_extra_binary_annotations,
         'other_attr': '42',
     }
+    app_main, transport, _ = generate_app_main(settings)
 
     def validate_span(span_objs):
         assert len(span_objs) == 1
@@ -181,18 +188,18 @@ def test_binary_annotations(thrift_obj, default_trace_id_generator):
             assert ann['value'] == expected_annotations.pop(ann['key'])
         assert len(expected_annotations) == 0
 
-    thrift_obj.side_effect = validate_span
+    WebTestApp(app_main).get('/pet/123?test=1', status=200)
 
-    WebTestApp(main({}, **settings)).get('/pet/123?test=1', status=200)
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
 
-    assert thrift_obj.call_count == 1
 
-
-def test_binary_annotations_404(thrift_obj, default_trace_id_generator):
+def test_binary_annotations_404(default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+    app_main, transport, _ = generate_app_main(settings)
 
     def validate_span(span_objs):
         assert len(span_objs) == 1
@@ -209,14 +216,13 @@ def test_binary_annotations_404(thrift_obj, default_trace_id_generator):
             assert ann['value'] == expected_annotations.pop(ann['key'])
         assert len(expected_annotations) == 0
 
-    thrift_obj.side_effect = validate_span
+    WebTestApp(app_main).get('/abcd?test=1', status=404)
 
-    WebTestApp(main({}, **settings)).get('/abcd?test=1', status=404)
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
 
-    assert thrift_obj.call_count == 1
 
-
-def test_custom_create_zipkin_attr(thrift_obj, default_trace_id_generator):
+def test_custom_create_zipkin_attr():
     custom_create_zipkin_attr = mock.Mock(return_value=ZipkinAttrs(
         trace_id='1234',
         span_id='1234',
@@ -228,17 +234,19 @@ def test_custom_create_zipkin_attr(thrift_obj, default_trace_id_generator):
     settings = {
         'zipkin.create_zipkin_attr': custom_create_zipkin_attr
     }
+    app_main, transport, _ = generate_app_main(settings)
 
-    WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
+    WebTestApp(app_main).get('/sample?test=1', status=200)
 
     assert custom_create_zipkin_attr.called
 
 
-def test_report_root_timestamp(thrift_obj, default_trace_id_generator):
+def test_report_root_timestamp():
     settings = {
         'zipkin.report_root_timestamp': True,
         'zipkin.tracing_percent': 100.0,
     }
+    app_main, transport, _ = generate_app_main(settings)
 
     old_time = time.time() * 1000000
 
@@ -247,16 +255,19 @@ def test_report_root_timestamp(thrift_obj, default_trace_id_generator):
         assert span_obj.timestamp > old_time
         assert span_obj.duration > 0
 
-    thrift_obj.side_effect = check_for_timestamp_and_duration
-    WebTestApp(main({}, **settings)).get('/sample', status=200)
+    WebTestApp(app_main).get('/sample', status=200)
+
+    assert len(transport.output) == 1
+    check_for_timestamp_and_duration(decode_thrift(transport.output[0]))
 
 
-def test_host_and_port_in_span(thrift_obj, default_trace_id_generator):
+def test_host_and_port_in_span():
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.host': '1.2.2.1',
         'zipkin.port': 1231,
     }
+    app_main, transport, _ = generate_app_main(settings)
 
     def validate_span(span_objs):
         assert len(span_objs) == 1
@@ -266,20 +277,23 @@ def test_host_and_port_in_span(thrift_obj, default_trace_id_generator):
         assert expected_ipv4 == span_obj.annotations[0].host.ipv4
         assert 1231 == span_obj.annotations[0].host.port
 
-    thrift_obj.side_effect = validate_span
+    WebTestApp(app_main).get('/sample?test=1', status=200)
 
-    WebTestApp(main({}, **settings)).get('/sample?test=1', status=200)
-
-    assert thrift_obj.call_count == 1
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
 
 
 def test_sample_server_span_with_firehose_tracing(
-        thrift_obj, default_trace_id_generator, get_span):
+        default_trace_id_generator, get_span):
     settings = {
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.firehose_handler': default_trace_id_generator,
     }
+    app_main, normal_transport, firehose_transport = generate_app_main(
+        settings,
+        firehose=True,
+    )
 
     old_time = time.time() * 1000000
 
@@ -300,44 +314,42 @@ def test_sample_server_span_with_firehose_tracing(
         assert old_time <= timestamps['sr']
         assert timestamps['sr'] <= timestamps['ss']
 
-    thrift_obj.side_effect = validate_span
-
     with mock.patch(
         'pyramid_zipkin.request_helper.generate_random_64bit_string'
     ) as mock_generate_random_64bit_string:
         mock_generate_random_64bit_string.return_value = '1'
-        WebTestApp(main({}, **settings)).get('/sample', status=200)
+        WebTestApp(app_main).get('/sample', status=200)
 
-    assert thrift_obj.call_count == 1
+    assert len(normal_transport.output) == 0
+    assert len(firehose_transport.output) == 1
+    validate_span(decode_thrift(firehose_transport.output[0]))
 
 
-def test_max_span_batch_size(
-    thrift_obj,
-    default_trace_id_generator,
-):
-    firehose_handler = mock.Mock()
+def test_max_span_batch_size(default_trace_id_generator):
     settings = {
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
-        'zipkin.firehose_handler': firehose_handler,
         'zipkin.max_span_batch_size': 1,
     }
+    app_main, normal_transport, firehose_transport = generate_app_main(
+        settings,
+        firehose=True,
+    )
 
-    WebTestApp(main({}, **settings)).get('/decorator_context', status=200)
+    WebTestApp(app_main).get('/decorator_context', status=200)
 
     # Assert the expected number of batches for two spans
-    assert thrift_obj.call_count == 2
-    assert len(thrift_obj.call_args_list) == 2
-    assert firehose_handler.call_count == 2
+    assert len(normal_transport.output) == 0
+    assert len(firehose_transport.output) == 2
 
     # Assert proper hierarchy
-    batch_one = thrift_obj.call_args_list[0][0]
+    batch_one = decode_thrift(firehose_transport.output[0])
     assert len(batch_one) == 1
-    child_span = batch_one[0][0]
+    child_span = batch_one[0]
 
-    batch_two = thrift_obj.call_args_list[1][0]
+    batch_two = decode_thrift(firehose_transport.output[1])
     assert len(batch_two) == 1
-    server_span = batch_two[0][0]
+    server_span = batch_two[0]
 
     assert child_span.parent_id == server_span.id
     assert child_span.name == 'my_span'
