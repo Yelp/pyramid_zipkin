@@ -17,7 +17,12 @@ def settings():
 
 @pytest.fixture
 def host():
-    return {'port': 80, 'service_name': 'acceptance_service'}
+    return {
+        'port': 80,
+        'service_name': 'acceptance_service',
+        'ipv4': '127.0.0.1',
+        'ipv6': None,
+    }
 
 
 @pytest.fixture

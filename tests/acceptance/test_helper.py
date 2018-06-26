@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import socket
+import struct
+
 from py_zipkin.thrift import zipkin_core
 from py_zipkin.transport import BaseTransportHandler
 from thriftpy.protocol.binary import read_list_begin
@@ -49,14 +52,24 @@ def get_timestamps(span):
     return timestamps
 
 
-def remove_ip_fields(span):
+def decode_ip_fields(span):
+    def decode_ip(host):
+        if host['ipv4'] != 0:
+            host['ipv4'] = socket.inet_ntop(
+                socket.AF_INET,
+                struct.pack('!i', host['ipv4']),
+            )
+        if host.get('ipv6'):
+            host['ipv6'] = socket.inet_ntop(
+                socket.AF_INET6,
+                host['ipv6'],
+            )
+
     for ann in span['annotations']:
-        ann['host'].pop('ipv4', None)
-        ann['host'].pop('ipv6', None)
+        decode_ip(ann['host'])
 
     for b_ann in span['binary_annotations']:
-        b_ann['host'].pop('ipv4', None)
-        b_ann['host'].pop('ipv6', None)
+        decode_ip(b_ann['host'])
 
 
 def massage_result_span(span_obj):
@@ -73,7 +86,7 @@ def massage_result_span(span_obj):
         bann['host'] = bann['host'].__dict__
     span['annotations'].sort(key=lambda ann: ann['value'])
     span['binary_annotations'].sort(key=lambda ann: ann['key'])
-    remove_ip_fields(span)
+    decode_ip_fields(span)
     return span
 
 

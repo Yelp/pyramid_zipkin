@@ -353,3 +353,38 @@ def test_max_span_batch_size(default_trace_id_generator):
 
     assert child_span.parent_id == server_span.id
     assert child_span.name == 'my_span'
+
+
+def test_sample_server_ipv6(
+    default_trace_id_generator,
+    get_span,
+):
+    # Assert that pyramid_zipkin and py_zipkin correctly handle ipv6 addresses.
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        result_span = test_helper.massage_result_span(span_objs[0])
+
+        assert result_span['annotations'][0]['host'] == {
+            'port': 80,
+            'service_name': 'acceptance_service',
+            'ipv6': '2001:db8:85a3::8a2e:370:7334',
+            'ipv4': 0,
+        }
+
+    # py_zipkin uses `socket.gethostbyname` to get the current host ip if it's not
+    # set in settings.
+    with mock.patch(
+        'socket.gethostbyname',
+        return_value='2001:0db8:85a3:0000:0000:8a2e:0370:7334',
+        autospec=True,
+    ):
+        WebTestApp(app_main).get('/sample', status=200)
+
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
