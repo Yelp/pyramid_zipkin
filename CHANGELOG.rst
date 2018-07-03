@@ -1,3 +1,9 @@
+0.21.1 (2018-06-03)
+-------------------
+- Use renamed py_zipkin.storage interface
+- Remove deprecated logger.debug() usage in tests
+- Require py_zipkin >= 0.13.0
+
 0.21.0 (2018-03-09)
 -------------------
 - Added support for http.route annotation
