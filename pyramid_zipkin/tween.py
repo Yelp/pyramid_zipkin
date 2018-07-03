@@ -3,7 +3,7 @@ import functools
 import warnings
 from collections import namedtuple
 
-import py_zipkin.stack
+import py_zipkin.storage
 from py_zipkin.exception import ZipkinError
 from py_zipkin.transport import BaseTransportHandler
 from py_zipkin.zipkin import zipkin_span
@@ -92,7 +92,7 @@ def _get_settings_from_request(request):
 
     context_stack = _getattr_path(request, settings.get('zipkin.request_context'))
     if context_stack is None:
-        context_stack = py_zipkin.stack.ThreadLocalStack()
+        context_stack = py_zipkin.storage.ThreadLocalStack()
 
     service_name = settings.get('service_name', 'unknown')
     span_name = '{0} {1}'.format(request.method, request.path)

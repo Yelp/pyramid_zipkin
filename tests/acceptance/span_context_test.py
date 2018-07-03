@@ -106,8 +106,6 @@ def test_span_context(default_trace_id_generator):
     assert child_span.parent_id == server_span.id
     assert grandchild_span.parent_id == child_span.id
     # Assert annotations are properly assigned
-    assert_extra_annotations(server_span, {'server_annotation': 1000000})
-    assert_extra_binary_annotations(server_span, {'server': 'true'})
     assert_extra_annotations(child_span, {'child_annotation': 1000000})
     assert_extra_binary_annotations(
         child_span, {'foo': 'bar', 'child': 'true'})

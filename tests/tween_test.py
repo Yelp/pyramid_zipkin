@@ -1,7 +1,7 @@
 import collections
 
 import mock
-import py_zipkin.stack
+import py_zipkin.storage
 import pytest
 
 from pyramid_zipkin import tween
@@ -37,7 +37,7 @@ def test_zipkin_tween_sampling(
     assert mock_span.call_count == 1
 
 
-@mock.patch('py_zipkin.stack.ThreadLocalStack', autospec=True)
+@mock.patch('py_zipkin.storage.ThreadLocalStack', autospec=True)
 def test_zipkin_tween_context_stack(
     mock_thread_local_stack,
     dummy_request,
@@ -49,7 +49,7 @@ def test_zipkin_tween_context_stack(
         'zipkin.request_context': 'rctxstorage.zipkin_context',
     }
 
-    context_stack = mock.Mock(spec=py_zipkin.stack.Stack)
+    context_stack = mock.Mock(spec=py_zipkin.storage.Stack)
     dummy_request.rctxstorage = DummyRequestContext(
         zipkin_context=context_stack,
     )
@@ -62,7 +62,7 @@ def test_zipkin_tween_context_stack(
     assert context_stack.pop.call_count == 1
 
 
-@mock.patch('py_zipkin.stack.ThreadLocalStack', autospec=True)
+@mock.patch('py_zipkin.storage.ThreadLocalStack', autospec=True)
 def test_zipkin_tween_context_stack_none(
     mock_thread_local_stack,
     dummy_request,
