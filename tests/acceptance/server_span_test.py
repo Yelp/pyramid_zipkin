@@ -135,31 +135,6 @@ def test_no_transport_handler_throws_error():
         WebTestApp(app_main).get('/sample', status=200)
 
 
-def test_server_extra_annotations_are_included(default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
-    app_main, transport, _ = generate_app_main(settings)
-
-    WebTestApp(app_main).get('/sample_v2', status=200)
-
-    assert len(transport.output) == 1
-    server_spans = decode_thrift(transport.output[0])
-    assert len(server_spans) == 1
-    server_span = server_spans[0]
-
-    # Assert that the annotations logged via debug statements exist
-    test_helper.assert_extra_annotations(
-        server_span,
-        {'bar': 1000000, 'foo': 2000000},
-    )
-    test_helper.assert_extra_binary_annotations(
-        server_span,
-        {'ping': 'pong'},
-    )
-
-
 def test_binary_annotations(default_trace_id_generator):
     def set_extra_binary_annotations(dummy_request, response):
         return {'other': dummy_request.registry.settings['other_attr']}

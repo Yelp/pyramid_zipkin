@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from py_zipkin.logging_helper import zipkin_logger
 from py_zipkin.zipkin import create_http_headers_for_new_span
 from py_zipkin.zipkin import zipkin_span
 from pyramid.config import Configurator
@@ -15,55 +14,48 @@ def sample(dummy_request):
 
 @view_config(route_name='sample_route_v2', renderer='json')
 def sample_v2(dummy_request):
-    zipkin_logger.debug({
-        'annotations': {'foo': 2},
-        'binary_annotations': {'ping': 'pong'},
-        'name': 'v2',
-    })
-    zipkin_logger.debug({'annotations': {'bar': 1}, 'name': 'v2'})
-    return {}
+    with zipkin_span(
+        service_name='root_service',
+        span_name='v2',
+        annotations={'foo': 2, 'bar': 1},
+        binary_annotations={'ping': 'pong'},
+    ):
+        return {}
 
 
 @view_config(route_name='sample_route_v2_client', renderer='json')
 def sample_v2_client(dummy_request):
-    zipkin_logger.debug({
-        'annotations': {'foo_client': 2},
-        'name': 'v2_client',
-        'service_name': 'foo_service',
-    })
-    zipkin_logger.debug({
-        'annotations': {'bar_client': 1},
-        'name': 'v2_client',
-        'service_name': 'bar_service',
-    })
+    with zipkin_span(
+        service_name='foo_service',
+        span_name='v2_client',
+        annotations={'foo_client': 2},
+    ):
+        pass
+    with zipkin_span(
+        service_name='bar_service',
+        span_name='v2_client',
+        annotations={'bar_client': 1},
+    ):
+        pass
     return {}
 
 
 @view_config(route_name='span_context', renderer='json')
 def span_context(dummy_request):
-    # These annotations should go to the server span
-    zipkin_logger.debug({
-        'annotations': {'server_annotation': 1},
-        'binary_annotations': {'server': 'true'},
-    })
     # Creates a new span, a child of the server span
     with zipkin_span(
-        service_name='child', span_name='get',
-        binary_annotations={'foo': 'bar'},
+        service_name='child',
+        span_name='get',
+        annotations={'child_annotation': 1},
+        binary_annotations={'foo': 'bar', 'child': 'true'},
     ):
-        # These annotations go to the child span
-        zipkin_logger.debug({
-            'annotations': {'child_annotation': 1},
-            'binary_annotations': {'child': 'true'},
-        })
-        # This should log a new span with `child` as its parent
-        zipkin_logger.debug({
-            'annotations': {'grandchild_annotation': 1},
-            'binary_annotations': {'grandchild': 'true'},
-            'service_name': 'grandchild',
-            'name': 'put',
-        })
-    return {}
+        with zipkin_span(
+            service_name='grandchild',
+            span_name='put',
+            annotations={'grandchild_annotation': 1},
+            binary_annotations={'grandchild': 'true'},
+        ):
+            return {}
 
 
 @view_config(route_name='decorator_context', renderer='json')

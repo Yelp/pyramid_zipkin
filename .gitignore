@@ -2,6 +2,7 @@
 *.egg-info
 *.pyc
 .coverage
+.pytest_cache
 .tox
 build/
 __pycache__
