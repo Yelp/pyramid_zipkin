@@ -38,6 +38,7 @@ _ZipkinSettings = namedtuple('ZipkinSettings', [
     'context_stack',
     'firehose_handler',
     'max_span_batch_size',
+    'use_pattern_as_span_name',
 ])
 
 
@@ -64,6 +65,8 @@ def _get_settings_from_request(request):
         which will log 100% of the spans to this handler, regardless of
         sampling decision. This is experimental and may change or be removed
         at any time without warning.
+    zipkin.use_pattern_as_span_name: if true, we'll use the pyramid route pattern
+        as span name. If false (default) we'll keep using the raw url path.
     """
     settings = request.registry.settings
 
@@ -113,6 +116,9 @@ def _get_settings_from_request(request):
     zipkin_port = settings.get('zipkin.port', request.server_port)
     firehose_handler = settings.get('zipkin.firehose_handler')
     max_span_batch_size = settings.get('zipkin.max_span_batch_size')
+    use_pattern_as_span_name = bool(
+        settings.get('zipkin.use_pattern_as_span_name', False),
+    )
     return _ZipkinSettings(
         zipkin_attrs,
         transport_handler,
@@ -125,6 +131,7 @@ def _get_settings_from_request(request):
         context_stack,
         firehose_handler,
         max_span_batch_size,
+        use_pattern_as_span_name,
     )
 
 
@@ -164,6 +171,11 @@ def zipkin_tween(handler, registry):
 
         with zipkin_span(**tween_kwargs) as zipkin_context:
             response = handler(request)
+            if zipkin_settings.use_pattern_as_span_name and request.matched_route:
+                zipkin_context.override_span_name('{} {}'.format(
+                    request.method,
+                    request.matched_route.pattern,
+                ))
             zipkin_context.update_binary_annotations(
                 get_binary_annotations(request, response),
             )

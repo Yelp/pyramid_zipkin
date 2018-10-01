@@ -1,3 +1,9 @@
+0.22.0 (2018-10-01)
+-------------------
+- Set `zipkin.use_pattern_as_span_name` to use the pyramid route pattern
+  as span_name rather than the raw url.
+- Requires py_zipkin >= 0.13.0.
+
 0.21.1 (2018-06-03)
 -------------------
 - Use renamed py_zipkin.storage interface
