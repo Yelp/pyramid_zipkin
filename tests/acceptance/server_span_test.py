@@ -328,3 +328,44 @@ def test_max_span_batch_size(default_trace_id_generator):
 
     assert child_span.parent_id == server_span.id
     assert child_span.name == 'my_span'
+
+
+def test_use_pattern_as_span_name(default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+        'other_attr': '42',
+        'zipkin.use_pattern_as_span_name': True,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        result_span = test_helper.massage_result_span(span_objs[0])
+        # Check that the span name is the pyramid pattern and not the raw url
+        assert result_span['name'] == 'GET /pet/{petId}'
+
+    WebTestApp(app_main).get('/pet/123?test=1', status=200)
+
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
+
+
+def test_defaults_at_using_raw_url_path(default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+        'other_attr': '42',
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    def validate_span(span_objs):
+        assert len(span_objs) == 1
+        result_span = test_helper.massage_result_span(span_objs[0])
+        # Check that the span name is the raw url by default
+        assert result_span['name'] == 'GET /pet/123'
+
+    WebTestApp(app_main).get('/pet/123?test=1', status=200)
+
+    assert len(transport.output) == 1
+    validate_span(decode_thrift(transport.output[0]))
