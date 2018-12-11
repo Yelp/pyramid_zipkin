@@ -37,6 +37,41 @@ def test_zipkin_tween_sampling(
     assert mock_span.call_count == 1
 
 
+@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
+@pytest.mark.parametrize('is_tracing', [True, False])
+@mock.patch('pyramid_zipkin.tween.zipkin_span', autospec=True)
+def test_zipkin_tween_post_processor_callback(
+    mock_span,
+    dummy_request,
+    dummy_response,
+    is_tracing,
+    set_callback,
+    called,
+):
+    """
+    We should invoke the post processor callback regardless of trace id
+    or sampling
+    """
+    mock_post_processor_callback = mock.Mock()
+
+    dummy_request.registry.settings = {
+        'zipkin.is_tracing': lambda _: is_tracing,
+        'zipkin.transport_handler': lambda _: None,
+    }
+    if set_callback:
+        dummy_request.registry.settings['zipkin.post_processor_callback'] = mock_post_processor_callback
+
+    handler = mock.Mock()
+    handler.return_value = dummy_response
+
+    assert tween.zipkin_tween(handler, None)(dummy_request) == dummy_response
+    assert handler.call_count == 1
+    assert mock_span.call_count == 1
+    assert mock_post_processor_callback.call_count == called 
+    if set_callback:
+        mock_post_processor_callback.assert_called_once_with(dummy_request, dummy_response)
+
+
 @mock.patch('py_zipkin.storage.ThreadLocalStack', autospec=True)
 def test_zipkin_tween_context_stack(
     mock_thread_local_stack,

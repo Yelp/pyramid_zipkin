@@ -14,14 +14,22 @@ from tests.acceptance.test_helper import decode_thrift
 from tests.acceptance.test_helper import generate_app_main
 
 
+@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
 def test_sample_server_span_with_100_percent_tracing(
     default_trace_id_generator,
     get_span,
+    set_callback,
+    called,
 ):
     settings = {
         'zipkin.tracing_percent': 100,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+
+    mock_post_processor_callback = mock.Mock()
+    if set_callback:
+        settings['zipkin.post_processor_callback'] = mock_post_processor_callback
+
     app_main, transport, _ = generate_app_main(settings)
 
     old_time = time.time() * 1000000
@@ -51,6 +59,7 @@ def test_sample_server_span_with_100_percent_tracing(
 
     assert len(transport.output) == 1
     validate_span(decode_thrift(transport.output[0]))
+    assert mock_post_processor_callback.call_count == called
 
 
 def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
@@ -88,16 +97,27 @@ def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
     validate(decode_thrift(transport.output[0]))
 
 
-def test_unsampled_request_has_no_span(default_trace_id_generator):
+@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
+def test_unsampled_request_has_no_span(
+    default_trace_id_generator,
+    set_callback,
+    called,
+):
     settings = {
         'zipkin.tracing_percent': 0,
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
+
+    mock_post_processor_callback = mock.Mock()
+    if set_callback:
+        settings['zipkin.post_processor_callback'] = mock_post_processor_callback
+
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample', status=200)
 
     assert len(transport.output) == 0
+    assert mock_post_processor_callback.call_count == called
 
 
 def test_blacklisted_route_has_no_span(default_trace_id_generator):
