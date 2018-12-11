@@ -59,7 +59,8 @@ def test_zipkin_tween_post_processor_callback(
         'zipkin.transport_handler': lambda _: None,
     }
     if set_callback:
-        dummy_request.registry.settings['zipkin.post_processor_callback'] = mock_post_processor_callback
+        dummy_request.registry.settings['zipkin.post_processor_callback'] = \
+            mock_post_processor_callback
 
     handler = mock.Mock()
     handler.return_value = dummy_response
@@ -67,9 +68,12 @@ def test_zipkin_tween_post_processor_callback(
     assert tween.zipkin_tween(handler, None)(dummy_request) == dummy_response
     assert handler.call_count == 1
     assert mock_span.call_count == 1
-    assert mock_post_processor_callback.call_count == called 
+    assert mock_post_processor_callback.call_count == called
     if set_callback:
-        mock_post_processor_callback.assert_called_once_with(dummy_request, dummy_response)
+        mock_post_processor_callback.assert_called_once_with(
+            dummy_request,
+            dummy_response,
+        )
 
 
 @mock.patch('py_zipkin.storage.ThreadLocalStack', autospec=True)
