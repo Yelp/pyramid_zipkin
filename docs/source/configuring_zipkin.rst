@@ -190,7 +190,7 @@ zipkin.post_handler_hook
 
     .. code-block:: python
 
-        settings['zipkin.post_handler_hook'] = request.post_handler_hook
+        settings['zipkin.post_handler_hook'] = post_handler_hook
 
         def post_handler_hook(request, response):
             do_some_work(response)
