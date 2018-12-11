@@ -26,9 +26,9 @@ def test_sample_server_span_with_100_percent_tracing(
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
 
-    mock_post_processor_callback = mock.Mock()
+    mock_post_handler_hook = mock.Mock()
     if set_callback:
-        settings['zipkin.post_processor_callback'] = mock_post_processor_callback
+        settings['zipkin.post_handler_hook'] = mock_post_handler_hook
 
     app_main, transport, _ = generate_app_main(settings)
 
@@ -59,7 +59,7 @@ def test_sample_server_span_with_100_percent_tracing(
 
     assert len(transport.output) == 1
     validate_span(decode_thrift(transport.output[0]))
-    assert mock_post_processor_callback.call_count == called
+    assert mock_post_handler_hook.call_count == called
 
 
 def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
@@ -108,16 +108,16 @@ def test_unsampled_request_has_no_span(
         'zipkin.trace_id_generator': default_trace_id_generator,
     }
 
-    mock_post_processor_callback = mock.Mock()
+    mock_post_handler_hook = mock.Mock()
     if set_callback:
-        settings['zipkin.post_processor_callback'] = mock_post_processor_callback
+        settings['zipkin.post_handler_hook'] = mock_post_handler_hook
 
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample', status=200)
 
     assert len(transport.output) == 0
-    assert mock_post_processor_callback.call_count == called
+    assert mock_post_handler_hook.call_count == called
 
 
 def test_blacklisted_route_has_no_span(default_trace_id_generator):

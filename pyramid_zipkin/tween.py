@@ -37,7 +37,7 @@ _ZipkinSettings = namedtuple('ZipkinSettings', [
     'port',
     'context_stack',
     'firehose_handler',
-    'post_processor_callback',
+    'post_handler_hook',
     'max_span_batch_size',
     'use_pattern_as_span_name',
 ])
@@ -116,7 +116,7 @@ def _get_settings_from_request(request):
     zipkin_host = settings.get('zipkin.host')
     zipkin_port = settings.get('zipkin.port', request.server_port)
     firehose_handler = settings.get('zipkin.firehose_handler')
-    post_processor_callback = settings.get('zipkin.post_processor_callback')
+    post_handler_hook = settings.get('zipkin.post_handler_hook')
     max_span_batch_size = settings.get('zipkin.max_span_batch_size')
     use_pattern_as_span_name = bool(
         settings.get('zipkin.use_pattern_as_span_name', False),
@@ -132,7 +132,7 @@ def _get_settings_from_request(request):
         zipkin_port,
         context_stack,
         firehose_handler,
-        post_processor_callback,
+        post_handler_hook,
         max_span_batch_size,
         use_pattern_as_span_name,
     )
@@ -183,8 +183,8 @@ def zipkin_tween(handler, registry):
                 get_binary_annotations(request, response),
             )
 
-            if zipkin_settings.post_processor_callback:
-                zipkin_settings.post_processor_callback(request, response)
+            if zipkin_settings.post_handler_hook:
+                zipkin_settings.post_handler_hook(request, response)
 
             return response
 
