@@ -1,3 +1,7 @@
+0.23.0 (2018-12-11)
+-------------------
+- Add post_handler_hook to the tween.
+
 0.22.0 (2018-10-02)
 -------------------
 - Set `zipkin.use_pattern_as_span_name` to use the pyramid route pattern
