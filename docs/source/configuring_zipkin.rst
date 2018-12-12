@@ -181,6 +181,21 @@ zipkin.request_context
         settings['zipkin.request_context'] = 'request.context.zipkin'
 
 
+zipkin.post_handler_hook
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Callback function for processing actions after the tween functionality
+    is executed and before the response is sent back.
+
+    The actions for example could be to modify the response headers.
+
+    .. code-block:: python
+
+        settings['zipkin.post_handler_hook'] = post_handler_hook
+
+        def post_handler_hook(request, response):
+            do_some_work(response)
+
+
 zipkin.firehose_handler [EXPERIMENTAL]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Callback function for "firehose tracing" mode. This will log 100% of the
