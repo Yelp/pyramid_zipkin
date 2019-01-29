@@ -29,7 +29,7 @@ def get_span():
         'name': 'GET /sample',
         'traceId': '17133d482ba4f605',
         'localEndpoint': {
-            'ipv4': '127.0.0.1',
+            'ipv4': mock.ANY,
             'port': 80,
             'serviceName': 'acceptance_service',
         },
