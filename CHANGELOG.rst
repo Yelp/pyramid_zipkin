@@ -1,3 +1,7 @@
+0.24.0 (2019-01-29)
+-------------------
+- Add `zipkin.encoding` param to allow specifying the output span encoding.
+
 0.23.0 (2018-12-11)
 -------------------
 - Add post_handler_hook to the tween.
