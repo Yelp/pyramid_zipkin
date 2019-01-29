@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import mock
 import pytest
 
 
@@ -16,73 +17,23 @@ def settings():
 
 
 @pytest.fixture
-def host():
-    return {'port': 80, 'service_name': 'acceptance_service'}
-
-
-@pytest.fixture
-def annotation(host):
-    return {'host': host}
-
-
-@pytest.fixture
-def uri_binary_annotation(host):
-    return {'key': 'http.uri', 'host': host, 'annotation_type': 6}
-
-
-@pytest.fixture
-def uri_qs_binary_annotation(host):
-    return {'key': 'http.uri.qs', 'host': host, 'annotation_type': 6}
-
-
-@pytest.fixture
-def route_binary_annotation(host):
-    return {'key': 'http.route', 'host': host, 'annotation_type': 6}
-
-
-@pytest.fixture
-def response_status_code_annotation(host):
-    return {'key': 'response_status_code', 'host': host, 'annotation_type': 6}
-
-
-@pytest.fixture
-def get_span(
-    annotation,
-    uri_binary_annotation,
-    uri_qs_binary_annotation,
-    route_binary_annotation,
-    response_status_code_annotation,
-):
-    sr_annotation = annotation.copy()
-    sr_annotation['value'] = 'sr'
-
-    ss_annotation = annotation.copy()
-    ss_annotation['value'] = 'ss'
-
-    uri_binary_annotation['value'] = '/sample'
-    uri_qs_binary_annotation['value'] = '/sample'
-    route_binary_annotation['value'] = '/sample'
-
-    response_status_code_annotation['value'] = '200'
-
-    return {'debug': False,
-            'id': 1,
-            'parent_id': None,
-            'annotations': sorted(
-                [sr_annotation, ss_annotation],
-                key=lambda ann: ann['value'],
-            ),
-            'binary_annotations': sorted(
-                [
-                    uri_binary_annotation,
-                    uri_qs_binary_annotation,
-                    route_binary_annotation,
-                    response_status_code_annotation,
-                ],
-                key=lambda bann: bann['key'],
-            ),
-            'name': 'GET /sample',
-            # An optional field for 128-bit trace IDs that py-zipkin doesn't
-            # set. See https://github.com/Yelp/py_zipkin/issues/28
-            'trace_id_high': None,
-            }
+def get_span():
+    return {
+        'id': '1',
+        'tags': {
+            'http.uri': '/sample',
+            'http.uri.qs': '/sample',
+            'http.route': '/sample',
+            'response_status_code': '200',
+        },
+        'name': 'GET /sample',
+        'traceId': '17133d482ba4f605',
+        'localEndpoint': {
+            'ipv4': '127.0.0.1',
+            'port': 80,
+            'serviceName': 'acceptance_service',
+        },
+        'kind': 'SERVER',
+        'timestamp': mock.ANY,
+        'duration': mock.ANY,
+    }
