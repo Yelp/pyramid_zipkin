@@ -204,6 +204,14 @@ zipkin.firehose_handler [EXPERIMENTAL]
     This is experimental and may change or be removed at any time without warning.
 
 
+zipkin.encoding
+~~~~~~~~~~~~~~~
+    py-zipkin allows you to specify the output encoding for your spans. This
+    argument should be of type `py_zipkin.Encoding`.
+
+    It defaults to `Encoding.V1_THRIFT` to keep backward compatibility.
+
+
 Configuring your application
 ----------------------------
 

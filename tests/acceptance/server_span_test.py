@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
 import time
+import json
 
 import mock
 import pytest
 from py_zipkin.exception import ZipkinError
-from py_zipkin.util import unsigned_hex_to_signed_int
 from py_zipkin.zipkin import ZipkinAttrs
 from webtest import TestApp as WebTestApp
 
 from .app import main
-from tests.acceptance import test_helper
-from tests.acceptance.test_helper import decode_thrift
 from tests.acceptance.test_helper import generate_app_main
 
 
-@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
+@pytest.mark.parametrize(['set_post_handler_hook', 'called'], [
+    (False, 0),
+    (True, 1),
+])
 def test_sample_server_span_with_100_percent_tracing(
     default_trace_id_generator,
     get_span,
-    set_callback,
+    set_post_handler_hook,
     called,
 ):
     settings = {
@@ -27,29 +28,12 @@ def test_sample_server_span_with_100_percent_tracing(
     }
 
     mock_post_handler_hook = mock.Mock()
-    if set_callback:
+    if set_post_handler_hook:
         settings['zipkin.post_handler_hook'] = mock_post_handler_hook
 
     app_main, transport, _ = generate_app_main(settings)
 
     old_time = time.time() * 1000000
-
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        span_obj = span_objs[0]
-        result_span = test_helper.massage_result_span(span_obj)
-        timestamps = test_helper.get_timestamps(result_span)
-        get_span['trace_id'] = unsigned_hex_to_signed_int(
-            default_trace_id_generator(span_obj),
-        )
-        # The request to this service had no incoming Zipkin headers, so it's
-        # assumed to be the root span of a trace, which means it logs
-        # timestamp and duration.
-        assert result_span.pop('timestamp') > old_time
-        assert result_span.pop('duration') > 0
-        assert get_span == result_span
-        assert old_time <= timestamps['sr']
-        assert timestamps['sr'] <= timestamps['ss']
 
     with mock.patch(
         'pyramid_zipkin.request_helper.generate_random_64bit_string'
@@ -57,9 +41,19 @@ def test_sample_server_span_with_100_percent_tracing(
         mock_generate_random_64bit_string.return_value = '1'
         WebTestApp(app_main).get('/sample', status=200)
 
-    assert len(transport.output) == 1
-    validate_span(decode_thrift(transport.output[0]))
     assert mock_post_handler_hook.call_count == called
+    assert len(transport.output) == 1
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['id'] == '1'
+    assert span['kind'] == 'SERVER'
+    assert span['timestamp'] > old_time
+    assert span['duration'] > 0
+    assert 'shared' not in span
+
+    assert span == get_span
 
 
 def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
@@ -69,18 +63,6 @@ def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
     trace_hex = 'aaaaaaaaaaaaaaaa'
     span_hex = 'bbbbbbbbbbbbbbbb'
     parent_hex = 'cccccccccccccccc'
-
-    def validate(span_objs):
-        assert len(span_objs) == 1
-        span = span_objs[0]
-        assert span.trace_id == unsigned_hex_to_signed_int(trace_hex)
-        assert span.id == unsigned_hex_to_signed_int(span_hex)
-        assert span.parent_id == unsigned_hex_to_signed_int(parent_hex)
-        # Since Zipkin headers are passed in, the span in assumed to be the
-        # server part of a span started by an upstream client, so doesn't have
-        # to log timestamp/duration.
-        assert span.timestamp is None
-        assert span.duration is None
 
     WebTestApp(app_main).get(
         '/sample',
@@ -94,13 +76,24 @@ def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
         },
     )
 
-    validate(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['traceId'] == trace_hex
+    assert span['id'] == span_hex
+    assert span['parentId'] == parent_hex
+    assert span['kind'] == 'SERVER'
+    assert span['shared'] is True
 
 
-@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
+@pytest.mark.parametrize(['set_post_handler_hook', 'called'], [
+    (False, 0),
+    (True, 1),
+])
 def test_unsampled_request_has_no_span(
     default_trace_id_generator,
-    set_callback,
+    set_post_handler_hook,
     called,
 ):
     settings = {
@@ -109,7 +102,7 @@ def test_unsampled_request_has_no_span(
     }
 
     mock_post_handler_hook = mock.Mock()
-    if set_callback:
+    if set_post_handler_hook:
         settings['zipkin.post_handler_hook'] = mock_post_handler_hook
 
     app_main, transport, _ = generate_app_main(settings)
@@ -167,26 +160,20 @@ def test_binary_annotations(default_trace_id_generator):
     }
     app_main, transport, _ = generate_app_main(settings)
 
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        span_obj = span_objs[0]
-        # Assert that the only present binary_annotations are ones we expect
-        expected_annotations = {
-            'http.uri': '/pet/123',
-            'http.uri.qs': '/pet/123?test=1',
-            'http.route': '/pet/{petId}',
-            'response_status_code': '200',
-            'other': '42',
-        }
-        result_span = test_helper.massage_result_span(span_obj)
-        for ann in result_span['binary_annotations']:
-            assert ann['value'] == expected_annotations.pop(ann['key'])
-        assert len(expected_annotations) == 0
-
     WebTestApp(app_main).get('/pet/123?test=1', status=200)
 
     assert len(transport.output) == 1
-    validate_span(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['tags'] == {
+        'http.uri': '/pet/123',
+        'http.uri.qs': '/pet/123?test=1',
+        'http.route': '/pet/{petId}',
+        'response_status_code': '200',
+        'other': '42',
+    }
 
 
 def test_binary_annotations_404(default_trace_id_generator):
@@ -196,25 +183,19 @@ def test_binary_annotations_404(default_trace_id_generator):
     }
     app_main, transport, _ = generate_app_main(settings)
 
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        span_obj = span_objs[0]
-        # Assert that the only present binary_annotations are ones we expect
-        expected_annotations = {
-            'http.uri': '/abcd',
-            'http.uri.qs': '/abcd?test=1',
-            'http.route': '',
-            'response_status_code': '404',
-        }
-        result_span = test_helper.massage_result_span(span_obj)
-        for ann in result_span['binary_annotations']:
-            assert ann['value'] == expected_annotations.pop(ann['key'])
-        assert len(expected_annotations) == 0
-
     WebTestApp(app_main).get('/abcd?test=1', status=404)
 
     assert len(transport.output) == 1
-    validate_span(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['tags'] == {
+        'http.uri': '/abcd',
+        'http.uri.qs': '/abcd?test=1',
+        'http.route': '',
+        'response_status_code': '404',
+    }
 
 
 def test_custom_create_zipkin_attr():
@@ -245,15 +226,18 @@ def test_report_root_timestamp():
 
     old_time = time.time() * 1000000
 
-    def check_for_timestamp_and_duration(span_objs):
-        span_obj = span_objs[0]
-        assert span_obj.timestamp > old_time
-        assert span_obj.duration > 0
-
     WebTestApp(app_main).get('/sample', status=200)
 
     assert len(transport.output) == 1
-    check_for_timestamp_and_duration(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    # report_root_timestamp means there's no client span with the
+    # same id, so the 'shared' flag should not be set.
+    assert 'shared' not in span
+    assert span['timestamp'] > old_time
+    assert span['duration'] > 0
 
 
 def test_host_and_port_in_span():
@@ -264,18 +248,18 @@ def test_host_and_port_in_span():
     }
     app_main, transport, _ = generate_app_main(settings)
 
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        span_obj = span_objs[0]
-        # Assert ipv4 and port match what we expect
-        expected_ipv4 = (1 << 24) | (2 << 16) | (2 << 8) | 1
-        assert expected_ipv4 == span_obj.annotations[0].host.ipv4
-        assert 1231 == span_obj.annotations[0].host.port
-
     WebTestApp(app_main).get('/sample?test=1', status=200)
 
     assert len(transport.output) == 1
-    validate_span(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['localEndpoint'] == {
+        'ipv4': '1.2.2.1',
+        'port': 1231,
+        'serviceName': 'acceptance_service',
+    }
 
 
 def test_sample_server_span_with_firehose_tracing(
@@ -292,23 +276,6 @@ def test_sample_server_span_with_firehose_tracing(
 
     old_time = time.time() * 1000000
 
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        span_obj = span_objs[0]
-        result_span = test_helper.massage_result_span(span_obj)
-        timestamps = test_helper.get_timestamps(result_span)
-        get_span['trace_id'] = unsigned_hex_to_signed_int(
-            default_trace_id_generator(span_obj),
-        )
-        # The request to this service had no incoming Zipkin headers, so it's
-        # assumed to be the root span of a trace, which means it logs
-        # timestamp and duration.
-        assert result_span.pop('timestamp') > old_time
-        assert result_span.pop('duration') > 0
-        assert get_span == result_span
-        assert old_time <= timestamps['sr']
-        assert timestamps['sr'] <= timestamps['ss']
-
     with mock.patch(
         'pyramid_zipkin.request_helper.generate_random_64bit_string'
     ) as mock_generate_random_64bit_string:
@@ -317,7 +284,13 @@ def test_sample_server_span_with_firehose_tracing(
 
     assert len(normal_transport.output) == 0
     assert len(firehose_transport.output) == 1
-    validate_span(decode_thrift(firehose_transport.output[0]))
+    spans = json.loads(firehose_transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['timestamp'] > old_time
+    assert span['duration'] > 0
+    assert span == get_span
 
 
 def test_max_span_batch_size(default_trace_id_generator):
@@ -338,16 +311,16 @@ def test_max_span_batch_size(default_trace_id_generator):
     assert len(firehose_transport.output) == 2
 
     # Assert proper hierarchy
-    batch_one = decode_thrift(firehose_transport.output[0])
+    batch_one = json.loads(firehose_transport.output[0])
     assert len(batch_one) == 1
     child_span = batch_one[0]
 
-    batch_two = decode_thrift(firehose_transport.output[1])
+    batch_two = json.loads(firehose_transport.output[1])
     assert len(batch_two) == 1
     server_span = batch_two[0]
 
-    assert child_span.parent_id == server_span.id
-    assert child_span.name == 'my_span'
+    assert child_span['parentId'] == server_span['id']
+    assert child_span['name'] == 'my_span'
 
 
 def test_use_pattern_as_span_name(default_trace_id_generator):
@@ -359,16 +332,15 @@ def test_use_pattern_as_span_name(default_trace_id_generator):
     }
     app_main, transport, _ = generate_app_main(settings)
 
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        result_span = test_helper.massage_result_span(span_objs[0])
-        # Check that the span name is the pyramid pattern and not the raw url
-        assert result_span['name'] == 'GET /pet/{petId}'
-
     WebTestApp(app_main).get('/pet/123?test=1', status=200)
 
     assert len(transport.output) == 1
-    validate_span(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+
+    assert len(spans) == 1
+    span = spans[0]
+    # Check that the span name is the pyramid pattern and not the raw url
+    assert span['name'] == 'GET /pet/{petId}'
 
 
 def test_defaults_at_using_raw_url_path(default_trace_id_generator):
@@ -379,13 +351,12 @@ def test_defaults_at_using_raw_url_path(default_trace_id_generator):
     }
     app_main, transport, _ = generate_app_main(settings)
 
-    def validate_span(span_objs):
-        assert len(span_objs) == 1
-        result_span = test_helper.massage_result_span(span_objs[0])
-        # Check that the span name is the raw url by default
-        assert result_span['name'] == 'GET /pet/123'
-
     WebTestApp(app_main).get('/pet/123?test=1', status=200)
 
     assert len(transport.output) == 1
-    validate_span(decode_thrift(transport.output[0]))
+    spans = json.loads(transport.output[0])
+
+    assert len(spans) == 1
+    span = spans[0]
+    # Check that the span name is the raw url by default
+    assert span['name'] == 'GET /pet/123'

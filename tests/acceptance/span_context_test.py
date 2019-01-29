@@ -1,10 +1,8 @@
+import json
+
 import mock
 from webtest import TestApp as WebTestApp
 
-from .app import main
-from tests.acceptance.test_helper import assert_extra_annotations
-from tests.acceptance.test_helper import assert_extra_binary_annotations
-from tests.acceptance.test_helper import decode_thrift
 from tests.acceptance.test_helper import generate_app_main
 
 
@@ -20,7 +18,7 @@ def test_log_new_client_spans(default_trace_id_generator):
     WebTestApp(app_main).get('/sample_v2_client', status=200)
 
     assert len(transport.output) == 1
-    span_list = decode_thrift(transport.output[0])
+    span_list = json.loads(transport.output[0])
     assert len(span_list) == 3
     foo_span = span_list[0]
     bar_span = span_list[1]
@@ -28,10 +26,14 @@ def test_log_new_client_spans(default_trace_id_generator):
 
     # Some sanity checks on the new client spans
     for client_span in (foo_span, bar_span):
-        assert client_span.parent_id == server_span.id
-    assert foo_span.id != bar_span.id
-    assert_extra_annotations(foo_span, {'foo_client': 2000000})
-    assert_extra_annotations(bar_span, {'bar_client': 1000000})
+        assert client_span['parentId'] == server_span['id']
+    assert foo_span['id'] != bar_span['id']
+    assert foo_span['annotations'] == [
+        {'timestamp': 2000000, 'value': 'foo_client'},
+    ]
+    assert bar_span['annotations'] == [
+        {'timestamp': 1000000, 'value': 'bar_client'},
+    ]
 
 
 @mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string')
@@ -74,8 +76,9 @@ def _assert_headers_present(settings, is_sampled):
         'X-B3-TraceId': '17133d482ba4f605',
     }
 
-    headers = WebTestApp(main({}, **settings)).get('/sample_child_span',
-                                                   status=200)
+    app_main, _, _ = generate_app_main(settings)
+    headers = WebTestApp(app_main).get('/sample_child_span',
+                                       status=200)
     headers_json = headers.json
     headers_json.pop('X-B3-SpanId')  # Randomly generated - Ignore.
 
@@ -96,33 +99,24 @@ def test_span_context(default_trace_id_generator):
     # Spans are batched
     # The order of span logging goes from innermost (grandchild) up.
     assert len(transport.output) == 1
-    span_list = decode_thrift(transport.output[0])
+    span_list = json.loads(transport.output[0])
     assert len(span_list) == 3
     grandchild_span = span_list[0]
     child_span = span_list[1]
     server_span = span_list[2]
 
     # Assert proper hierarchy
-    assert child_span.parent_id == server_span.id
-    assert grandchild_span.parent_id == child_span.id
+    assert child_span['parentId'] == server_span['id']
+    assert grandchild_span['parentId'] == child_span['id']
     # Assert annotations are properly assigned
-    assert_extra_annotations(child_span, {'child_annotation': 1000000})
-    assert_extra_binary_annotations(
-        child_span, {'foo': 'bar', 'child': 'true'})
-    assert_extra_annotations(
-        grandchild_span, {'grandchild_annotation': 1000000})
-    assert_extra_binary_annotations(grandchild_span, {'grandchild': 'true'})
-
-    # For the span produced by SpanContext, assert cs==sr and ss==cr
-    # Initialize them all so the equalities won't be true.
-    annotations = {
-        'cs': 0, 'sr': 1, 'ss': 2, 'cr': 3
-    }
-    for annotation in child_span.annotations:
-        if annotation.value in annotations:
-            annotations[annotation.value] = annotation.timestamp
-    assert annotations['cs'] == annotations['sr']
-    assert annotations['ss'] == annotations['cr']
+    assert child_span['annotations'] == [
+        {'timestamp': 1000000, 'value': 'child_annotation'},
+    ]
+    assert child_span['tags'] == {'foo': 'bar', 'child': 'true'}
+    assert grandchild_span['annotations'] == [
+        {'timestamp': 1000000, 'value': 'grandchild_annotation'},
+    ]
+    assert grandchild_span['tags'] == {'grandchild': 'true'}
 
 
 def test_decorator(default_trace_id_generator):
@@ -138,15 +132,15 @@ def test_decorator(default_trace_id_generator):
 
     # Two spans are logged - child span, then server span
     assert len(transport.output) == 1
-    span_list = decode_thrift(transport.output[0])
+    span_list = json.loads(transport.output[0])
     assert len(span_list) == 2
     child_span = span_list[0]
     server_span = span_list[1]
 
     # Assert proper hierarchy and annotations
-    assert child_span.parent_id == server_span.id
-    assert_extra_binary_annotations(child_span, {'a': '1'})
-    assert child_span.name == 'my_span'
+    assert child_span['parentId'] == server_span['id']
+    assert child_span['tags'] == {'a': '1'}
+    assert child_span['name'] == 'my_span'
 
 
 def test_add_logging_annotation():
@@ -159,12 +153,11 @@ def test_add_logging_annotation():
     WebTestApp(app_main).get('/sample', status=200)
 
     assert len(transport.output) == 1
-    span_list = decode_thrift(transport.output[0])
+    span_list = json.loads(transport.output[0])
     assert len(span_list) == 1
     server_span = span_list[0]
 
     # Just make sure py-zipkin added an annotation for when logging started
-    assert any(
-        annotation.value == 'py_zipkin.logging_end'
-        for annotation in server_span.annotations
-    )
+    assert server_span['annotations'] == [
+        {'timestamp': mock.ANY, 'value': 'py_zipkin.logging_end'},
+    ]

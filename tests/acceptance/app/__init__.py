@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from py_zipkin import Encoding
 from py_zipkin.zipkin import create_http_headers_for_new_span
 from py_zipkin.zipkin import zipkin_span
 from pyramid.config import Configurator
@@ -100,6 +101,7 @@ def main(global_config, **settings):
     """ Very basic pyramid app """
     settings['service_name'] = 'acceptance_service'
     settings['zipkin.transport_handler'] = lambda x, y: None
+    settings['zipkin.encoding'] = Encoding.V2_JSON
 
     config = Configurator(settings=settings)
 

@@ -4,6 +4,7 @@ import warnings
 from collections import namedtuple
 
 import py_zipkin.storage
+from py_zipkin import Encoding
 from py_zipkin.exception import ZipkinError
 from py_zipkin.transport import BaseTransportHandler
 from py_zipkin.zipkin import zipkin_span
@@ -40,6 +41,7 @@ _ZipkinSettings = namedtuple('ZipkinSettings', [
     'post_handler_hook',
     'max_span_batch_size',
     'use_pattern_as_span_name',
+    'encoding',
 ])
 
 
@@ -121,6 +123,7 @@ def _get_settings_from_request(request):
     use_pattern_as_span_name = bool(
         settings.get('zipkin.use_pattern_as_span_name', False),
     )
+    encoding = settings.get('zipkin.encoding', Encoding.V1_THRIFT)
     return _ZipkinSettings(
         zipkin_attrs,
         transport_handler,
@@ -135,6 +138,7 @@ def _get_settings_from_request(request):
         post_handler_hook,
         max_span_batch_size,
         use_pattern_as_span_name,
+        encoding=encoding,
     )
 
 
@@ -167,6 +171,7 @@ def zipkin_tween(handler, registry):
             report_root_timestamp=zipkin_settings.report_root_timestamp,
             context_stack=zipkin_settings.context_stack,
             max_span_batch_size=zipkin_settings.max_span_batch_size,
+            encoding=zipkin_settings.encoding,
         )
 
         if zipkin_settings.firehose_handler is not None:

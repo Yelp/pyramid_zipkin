@@ -5,6 +5,7 @@ import py_zipkin.storage
 import pytest
 
 from pyramid_zipkin import tween
+from tests.acceptance.test_helper import MockTransport
 
 
 DummyRequestContext = collections.namedtuple(
@@ -27,7 +28,7 @@ def test_zipkin_tween_sampling(
     """
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: is_tracing,
-        'zipkin.transport_handler': lambda _: None,
+        'zipkin.transport_handler': MockTransport(),
     }
     handler = mock.Mock()
     handler.return_value = dummy_response
@@ -56,7 +57,7 @@ def test_zipkin_tween_post_handler_hook(
 
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: is_tracing,
-        'zipkin.transport_handler': lambda _: None,
+        'zipkin.transport_handler': MockTransport(),
     }
     if set_callback:
         dummy_request.registry.settings['zipkin.post_handler_hook'] = \
@@ -84,7 +85,7 @@ def test_zipkin_tween_context_stack(
 ):
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: False,
-        'zipkin.transport_handler': lambda _: None,
+        'zipkin.transport_handler': MockTransport(),
         'zipkin.request_context': 'rctxstorage.zipkin_context',
     }
 
@@ -112,7 +113,7 @@ def test_zipkin_tween_context_stack_none(
 
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: False,
-        'zipkin.transport_handler': lambda _: None,
+        'zipkin.transport_handler': MockTransport(),
         'request_context': 'rctxstorage',
     }
 
@@ -137,3 +138,18 @@ def test_getattr_path():
     # attribute is None
     mock_object = mock.Mock(nil=None)
     assert tween._getattr_path(mock_object, 'nil') is None
+
+
+def test_logs_warning_if_using_function_as_transport(
+    dummy_request,
+    dummy_response,
+):
+    dummy_request.registry.settings = {
+        'zipkin.is_tracing': lambda _: False,
+        'zipkin.transport_handler': lambda x: None,
+        'request_context': 'rctxstorage',
+    }
+
+    handler = mock.Mock(return_value=dummy_response)
+    with pytest.deprecated_call():
+        tween.zipkin_tween(handler, None)(dummy_request)
