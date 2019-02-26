@@ -1,8 +1,9 @@
 import collections
 
 import mock
-import py_zipkin.storage
 import pytest
+from py_zipkin.storage import get_default_tracer
+from py_zipkin.storage import Stack
 
 from pyramid_zipkin import tween
 from tests.acceptance.test_helper import MockTransport
@@ -15,7 +16,7 @@ DummyRequestContext = collections.namedtuple(
 
 
 @pytest.mark.parametrize('is_tracing', [True, False])
-@mock.patch('pyramid_zipkin.tween.zipkin_span', autospec=True)
+@mock.patch.object(get_default_tracer(), 'zipkin_span', autospec=True)
 def test_zipkin_tween_sampling(
     mock_span,
     dummy_request,
@@ -40,7 +41,7 @@ def test_zipkin_tween_sampling(
 
 @pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
 @pytest.mark.parametrize('is_tracing', [True, False])
-@mock.patch('pyramid_zipkin.tween.zipkin_span', autospec=True)
+@mock.patch.object(get_default_tracer(), 'zipkin_span', autospec=True)
 def test_zipkin_tween_post_handler_hook(
     mock_span,
     dummy_request,
@@ -77,55 +78,30 @@ def test_zipkin_tween_post_handler_hook(
         )
 
 
-@mock.patch('py_zipkin.storage.ThreadLocalStack', autospec=True)
 def test_zipkin_tween_context_stack(
-    mock_thread_local_stack,
     dummy_request,
     dummy_response,
 ):
+    old_context_stack = get_default_tracer()._context_stack
     dummy_request.registry.settings = {
         'zipkin.is_tracing': lambda _: False,
         'zipkin.transport_handler': MockTransport(),
         'zipkin.request_context': 'rctxstorage.zipkin_context',
     }
 
-    context_stack = mock.Mock(spec=py_zipkin.storage.Stack)
+    context_stack = mock.Mock(spec=Stack)
     dummy_request.rctxstorage = DummyRequestContext(
         zipkin_context=context_stack,
     )
 
     handler = mock.Mock(return_value=dummy_response)
-    assert tween.zipkin_tween(handler, None)(dummy_request) == dummy_response
+    response = tween.zipkin_tween(handler, None)(dummy_request)
+    get_default_tracer()._context_stack = old_context_stack
 
-    assert mock_thread_local_stack.call_count == 0
+    assert response == dummy_response
+
     assert context_stack.push.call_count == 1
     assert context_stack.pop.call_count == 1
-
-
-@mock.patch('py_zipkin.storage.ThreadLocalStack', autospec=True)
-def test_zipkin_tween_context_stack_none(
-    mock_thread_local_stack,
-    dummy_request,
-    dummy_response,
-):
-    mock_thread_local_stack_instance = mock.Mock()
-    mock_thread_local_stack.return_value = mock_thread_local_stack_instance
-
-    dummy_request.registry.settings = {
-        'zipkin.is_tracing': lambda _: False,
-        'zipkin.transport_handler': MockTransport(),
-        'request_context': 'rctxstorage',
-    }
-
-    # explicitly delete attribute, will raise AttributeError on access
-    delattr(dummy_request, dummy_request.registry.settings['request_context'])
-
-    handler = mock.Mock(return_value=dummy_response)
-    assert tween.zipkin_tween(handler, None)(dummy_request) == dummy_response
-
-    assert mock_thread_local_stack.call_count == 1
-    assert mock_thread_local_stack_instance.push.call_count == 1
-    assert mock_thread_local_stack_instance.pop.call_count == 1
 
 
 def test_getattr_path():

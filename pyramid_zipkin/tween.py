@@ -3,11 +3,11 @@ import functools
 import warnings
 from collections import namedtuple
 
-import py_zipkin.storage
 from py_zipkin import Encoding
+from py_zipkin import Kind
 from py_zipkin.exception import ZipkinError
+from py_zipkin.storage import get_default_tracer
 from py_zipkin.transport import BaseTransportHandler
-from py_zipkin.zipkin import zipkin_span
 
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
@@ -97,8 +97,6 @@ def _get_settings_from_request(request):
         )
 
     context_stack = _getattr_path(request, settings.get('zipkin.request_context'))
-    if context_stack is None:
-        context_stack = py_zipkin.storage.ThreadLocalStack()
 
     service_name = settings.get('service_name', 'unknown')
     span_name = '{0} {1}'.format(request.method, request.path)
@@ -159,6 +157,7 @@ def zipkin_tween(handler, registry):
     """
     def tween(request):
         zipkin_settings = _get_settings_from_request(request)
+        tracer = get_default_tracer()
 
         tween_kwargs = dict(
             service_name=zipkin_settings.service_name,
@@ -172,12 +171,13 @@ def zipkin_tween(handler, registry):
             context_stack=zipkin_settings.context_stack,
             max_span_batch_size=zipkin_settings.max_span_batch_size,
             encoding=zipkin_settings.encoding,
+            kind=Kind.SERVER,
         )
 
         if zipkin_settings.firehose_handler is not None:
             tween_kwargs['firehose_handler'] = zipkin_settings.firehose_handler
 
-        with zipkin_span(**tween_kwargs) as zipkin_context:
+        with tracer.zipkin_span(**tween_kwargs) as zipkin_context:
             response = handler(request)
             if zipkin_settings.use_pattern_as_span_name and request.matched_route:
                 zipkin_context.override_span_name('{} {}'.format(
