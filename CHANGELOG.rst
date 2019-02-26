@@ -1,3 +1,7 @@
+0.24.1 (2019-02-25)
+-------------------
+- Update tween to support py-zipkin 0.18+
+
 0.24.0 (2019-01-29)
 -------------------
 - Add `zipkin.encoding` param to allow specifying the output span encoding.
