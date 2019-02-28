@@ -157,15 +157,6 @@ zipkin.set_extra_binary_annotations
         settings['zipkin.set_extra_binary_annotations'] = set_binary_annotations
 
 
-zipkin.always_emit_zipkin_headers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Whether to forward the Zipkin's headers if the request is not being
-    sampled. Defaults to True.
-
-    Set to False if you're really concerned with performance as it'll save you
-    about 300us on every non-traced request.
-
-
 zipkin.request_context
 ~~~~~~~~~~~~~~~~~~~~~~
     If it contains a valid request attribute, this specifies the stack

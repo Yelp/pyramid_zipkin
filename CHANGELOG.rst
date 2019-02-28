@@ -1,3 +1,9 @@
+0.25.0 (2019-02-28)
+-------------------
+- Remove `zipkin.always_emit_zipkin_headers` config option. Rather than using
+  set_property to add the trace_id to the request, we now do a simple assignment
+  which is way faster and removes the need for that flag.
+
 0.24.1 (2019-02-25)
 -------------------
 - Update tween to support py-zipkin 0.18+
