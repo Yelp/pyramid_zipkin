@@ -360,3 +360,36 @@ def test_defaults_at_using_raw_url_path(default_trace_id_generator):
     span = spans[0]
     # Check that the span name is the raw url by default
     assert span['name'] == 'GET /pet/123'
+
+
+def test_sample_server_ipv6(
+    default_trace_id_generator,
+    get_span,
+):
+    # Assert that pyramid_zipkin and py_zipkin correctly handle ipv6 addresses.
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    # py_zipkin uses `socket.gethostbyname` to get the current host ip if it's not
+    # set in settings.
+    with mock.patch(
+        'socket.gethostbyname',
+        return_value='2001:db8:85a3::8a2e:370:7334',
+        autospec=True,
+    ):
+        WebTestApp(app_main).get('/sample', status=200)
+
+    assert len(transport.output) == 1
+    spans = json.loads(transport.output[0])
+
+    assert len(spans) == 1
+    span = spans[0]
+    # Check that the span name is the raw url by default
+    assert span['localEndpoint'] == {
+        'serviceName': 'acceptance_service',
+        'port': 80,
+        'ipv6': '2001:db8:85a3::8a2e:370:7334',
+    }
