@@ -1,19 +1,24 @@
 language: python
+# sudo and xenial are required to install py37
+# https://github.com/travis-ci/travis-ci/issues/9069
+sudo: required
+dist: xenial
+
 matrix:
   include:
   - python: 2.7
     env: TOXENV=py27
-  - python: 3.4
-    env: TOXENV=py34
   - python: 3.5
     env: TOXENV=py35
   - python: 3.6
     env: TOXENV=py36
-  - python: 3.6
+  - python: 3.7
+    env: TOXENV=py37
+  - python: 3.7
     env: TOXENV=docs
-  - python: 3.6
+  - python: 3.7
     env: TOXENV=flake8
-  - python: 3.6
+  - python: 3.7
     env: TOXENV=pre-commit
 install: pip install tox coveralls
 script: tox
