@@ -11,6 +11,8 @@ from py_zipkin.transport import BaseTransportHandler
 
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
+from pyramid_zipkin.request_helper import should_not_sample_path
+from pyramid_zipkin.request_helper import should_not_sample_route
 
 
 def _getattr_path(obj, path):
@@ -174,7 +176,12 @@ def zipkin_tween(handler, registry):
             kind=Kind.SERVER,
         )
 
-        if zipkin_settings.firehose_handler is not None:
+        # Only set the firehose_handler if it's defined and only if the current
+        # request is not blacklisted. This prevents py_zipkin from emitting
+        # firehose spans for blacklisted paths like /status
+        if zipkin_settings.firehose_handler is not None and \
+                not should_not_sample_path(request) and \
+                not should_not_sample_route(request):
             tween_kwargs['firehose_handler'] = zipkin_settings.firehose_handler
 
         with tracer.zipkin_span(**tween_kwargs) as zipkin_context:
