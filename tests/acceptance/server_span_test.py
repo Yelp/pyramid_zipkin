@@ -119,11 +119,12 @@ def test_blacklisted_route_has_no_span(default_trace_id_generator):
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_routes': ['sample_route'],
     }
-    app_main, transport, _ = generate_app_main(settings)
+    app_main, transport, firehose = generate_app_main(settings, firehose=True)
 
     WebTestApp(app_main).get('/sample', status=200)
 
     assert len(transport.output) == 0
+    assert len(firehose.output) == 0
 
 
 def test_blacklisted_path_has_no_span(default_trace_id_generator):
@@ -132,11 +133,12 @@ def test_blacklisted_path_has_no_span(default_trace_id_generator):
         'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_paths': [r'^/sample'],
     }
-    app_main, transport, _ = generate_app_main(settings)
+    app_main, transport, firehose = generate_app_main(settings, firehose=True)
 
     WebTestApp(app_main).get('/sample', status=200)
 
     assert len(transport.output) == 0
+    assert len(firehose.output) == 0
 
 
 def test_no_transport_handler_throws_error():
