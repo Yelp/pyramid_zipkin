@@ -1,3 +1,7 @@
+0.25.1 (2019-09-16)
+-------------------
+- Path and route blacklists now work also for firehose traces
+
 0.25.0 (2019-02-28)
 -------------------
 - Remove `zipkin.always_emit_zipkin_headers` config option. Rather than using
