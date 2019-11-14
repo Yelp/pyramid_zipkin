@@ -132,12 +132,18 @@ def create_zipkin_attr(request):
     else:
         is_sampled = is_tracing(request)
 
-    request.zipkin_trace_id = get_trace_id(request)
-
     span_id = request.headers.get(
         'X-B3-SpanId', generate_random_64bit_string())
     parent_span_id = request.headers.get('X-B3-ParentSpanId', None)
     flags = request.headers.get('X-B3-Flags', '0')
+
+    # Store zipkin_trace_id and zipkin_span_id in the request object so that
+    # they're still available once we leave the pyramid_zipkin tween. An example
+    # is being able to log them in the pyramid exc_logger, which runs after all
+    # tweens have been exited.
+    request.zipkin_trace_id = get_trace_id(request)
+    request.zipkin_span_id = span_id
+
     return ZipkinAttrs(
         trace_id=request.zipkin_trace_id,
         span_id=span_id,
