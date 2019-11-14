@@ -1,3 +1,7 @@
+0.26.0 (2019-11-14)
+-------------------
+- Add zipkin_span_id to the request object.
+
 0.25.1 (2019-09-16)
 -------------------
 - Path and route blacklists now work also for firehose traces
