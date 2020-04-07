@@ -1,3 +1,7 @@
+0.27.0 (2020-04-07)
+-------------------
+- Change tween ordering to be close to INGRESS rather than EXCVIEW
+
 0.26.0 (2019-11-14)
 -------------------
 - Add zipkin_span_id to the request object.
