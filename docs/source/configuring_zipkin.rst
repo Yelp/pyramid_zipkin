@@ -104,11 +104,17 @@ zipkin.stream_name
 zipkin.tracing_percent
 ~~~~~~~~~~~~~~~~~~~~~~
     A number between 0.0 and 100.0 to control how many request calls get sampled.
+
+    .. note::
+      When your service is traced according to the tracing percentage, the
+      resulting trace will start at your service and will not include any upstream
+      clients.
+
     Defaults to `0.50`. Example:
 
     .. code-block:: python
 
-        'zipkin.tracing_percent': 100.0  # Trace all the calls.
+        'zipkin.tracing_percent': 1.0  # Increase tracing probability to 1%
 
 
 zipkin.trace_id_generator
