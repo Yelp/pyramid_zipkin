@@ -16,7 +16,7 @@ Features include:
 
 * Blacklisting specific route/paths from getting traced.
 
-* `zipkin_tracing_percent` to control the percentage of requests getting sampled.
+* `zipkin_tracing_percent` to control the percentage of requests getting sampled (starting at, and downstream from, this service).
 
 * Creates `http.uri`, `http.uri.qs`, and `status_code` binary annotations automatically for each trace.
 
