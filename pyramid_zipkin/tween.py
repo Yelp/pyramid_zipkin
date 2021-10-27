@@ -196,7 +196,7 @@ def zipkin_tween(handler, registry):
             )
 
             if zipkin_settings.post_handler_hook:
-                zipkin_settings.post_handler_hook(request, response)
+                zipkin_settings.post_handler_hook(request, response, zipkin_context)
 
             return response
 

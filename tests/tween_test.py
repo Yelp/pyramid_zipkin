@@ -75,6 +75,7 @@ def test_zipkin_tween_post_handler_hook(
         mock_post_handler_hook.assert_called_once_with(
             dummy_request,
             dummy_response,
+            mock_span.return_value.__enter__.return_value,
         )
 
 
