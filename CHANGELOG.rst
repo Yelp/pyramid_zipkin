@@ -1,7 +1,7 @@
 1.0.1 (2021-10-28)
 -------------------
 - Fixed a flake8 formatting related failure from 1.0.0
-  
+
 1.0.0 (2021-10-27)
 -------------------
 - The post_handler_hook api is changed to pass the zipkin_span context
