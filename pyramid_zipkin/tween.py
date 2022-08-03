@@ -185,21 +185,26 @@ def zipkin_tween(handler, registry):
             tween_kwargs['firehose_handler'] = zipkin_settings.firehose_handler
 
         with tracer.zipkin_span(**tween_kwargs) as zipkin_context:
-            response = handler(request)
-            if zipkin_settings.use_pattern_as_span_name and request.matched_route:
-                zipkin_context.override_span_name('{} {}'.format(
-                    request.method,
-                    request.matched_route.pattern,
-                ))
-            zipkin_context.update_binary_annotations(
-                get_binary_annotations(request, response),
-            )
-
-            if zipkin_settings.post_handler_hook:
-                zipkin_settings.post_handler_hook(
-                    request,
-                    response,
-                    zipkin_context
+            try:
+                response = handler(request)
+            except Exception as e:
+                response =  None
+                zipkin_context.update_binary_annotations({'error_type': type(e).__name__})
+                raise e
+            finally:
+                if zipkin_settings.post_handler_hook:
+                    zipkin_settings.post_handler_hook(
+                        request,
+                        response,
+                        zipkin_context
+                    )
+                if zipkin_settings.use_pattern_as_span_name and request.matched_route:
+                    zipkin_context.override_span_name('{} {}'.format(
+                        request.method,
+                        request.matched_route.pattern,
+                    ))
+                zipkin_context.update_binary_annotations(
+                    get_binary_annotations(request, response),
                 )
 
             return response
