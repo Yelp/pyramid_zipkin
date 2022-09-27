@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from pyramid.tweens import INGRESS
+from pyramid.config import Configurator
 
 
-def includeme(config):  # pragma: no cover
+def includeme(config: Configurator) -> None:  # pragma: no cover
     """
     :type config: :class:`pyramid.config.Configurator`
     """
