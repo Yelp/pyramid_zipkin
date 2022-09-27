@@ -18,8 +18,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyramid_zipkin'
-copyright = u'2018, Yelp, Inc'
+project = 'pyramid_zipkin'
+copyright = '2018, Yelp, Inc'
 
 exclude_patterns = []
 
