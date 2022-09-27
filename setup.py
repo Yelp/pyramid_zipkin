@@ -18,7 +18,6 @@ setup(
     install_requires=[
         'py_zipkin >= 0.18.1',
         'pyramid',
-        'six',
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
