@@ -29,7 +29,7 @@ def _getattr_path(obj, path):
     return obj
 
 
-_ZipkinSettings = namedtuple('ZipkinSettings', [
+_ZipkinSettings = namedtuple('_ZipkinSettings', [
     'zipkin_attrs',
     'transport_handler',
     'service_name',
