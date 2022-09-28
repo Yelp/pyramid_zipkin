@@ -1,16 +1,17 @@
 import functools
 import warnings
 from collections import namedtuple
-from typing import Any, Callable
+from typing import Any
+from typing import Callable
 
 from py_zipkin import Encoding
 from py_zipkin import Kind
 from py_zipkin.exception import ZipkinError
 from py_zipkin.storage import get_default_tracer
 from py_zipkin.transport import BaseTransportHandler
+from pyramid.registry import Registry
 from pyramid.request import Request
 from pyramid.response import Response
-from pyramid.registry import Registry
 
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
@@ -144,7 +145,9 @@ def _get_settings_from_request(request: Request) -> _ZipkinSettings:
         encoding=encoding,
     )
 
+
 Handler = Callable[[Request], Response]
+
 
 def zipkin_tween(handler: Handler, registry: Registry) -> Handler:
     """

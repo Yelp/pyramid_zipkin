@@ -1,13 +1,13 @@
 import random
 import re
 import struct
+from typing import Dict
 
 from py_zipkin.util import generate_random_64bit_string
 from py_zipkin.zipkin import ZipkinAttrs
 from pyramid.interfaces import IRoutesMapper
 from pyramid.request import Request
 from pyramid.response import Response
-from typing import Dict
 
 
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5
