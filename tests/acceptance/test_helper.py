@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from py_zipkin.transport import BaseTransportHandler
 
 from .app import main

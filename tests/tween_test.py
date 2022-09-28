@@ -1,6 +1,6 @@
 import collections
+from unittest import mock
 
-import mock
 import pytest
 from py_zipkin.storage import get_default_tracer
 from py_zipkin.storage import Stack

@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 import random
 import re
 import struct
 
-import six
 from py_zipkin.util import generate_random_64bit_string
 from py_zipkin.zipkin import ZipkinAttrs
 from pyramid.interfaces import IRoutesMapper
@@ -45,7 +43,7 @@ def _convert_signed_hex(s: str) -> str:
         '-0x3ab5151d76fb85e1' => 'c54aeae289047a1f'
     """
     if s.startswith('0x') or s.startswith('-0x'):
-        s = '{0:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
+        s = '{:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
     return s.zfill(16)
 
 
@@ -61,7 +59,7 @@ def should_not_sample_path(request: Request) -> bool:
     # Only compile strings, since even recompiling existing
     # compiled regexes takes time.
     regexes = [
-        re.compile(r) if isinstance(r, six.string_types) else r
+        re.compile(r) if isinstance(r, str) else r
         for r in blacklisted_paths
     ]
     return any(r.match(request.path) for r in regexes)

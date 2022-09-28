@@ -1,9 +1,8 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '1.0.1'
+__version__ = '2.0.0'
 
 setup(
     name='pyramid_zipkin',
@@ -19,7 +18,6 @@ setup(
     install_requires=[
         'py_zipkin >= 0.18.1',
         'pyramid',
-        'six',
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -27,9 +25,8 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
+    python_requires=">=3.7",
 )

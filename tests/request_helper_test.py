@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from pyramid_zipkin import request_helper
 

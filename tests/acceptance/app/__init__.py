@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from py_zipkin import Encoding
 from py_zipkin.zipkin import create_http_headers_for_new_span
 from py_zipkin.zipkin import zipkin_span
