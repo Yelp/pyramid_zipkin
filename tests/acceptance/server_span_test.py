@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import json
 import time
+from unittest import mock
 
-import mock
 import pytest
 from py_zipkin.exception import ZipkinError
 from py_zipkin.zipkin import ZipkinAttrs

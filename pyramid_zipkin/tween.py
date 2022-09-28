@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import functools
 import warnings
 from collections import namedtuple
@@ -101,7 +100,7 @@ def _get_settings_from_request(request):
     context_stack = _getattr_path(request, settings.get('zipkin.request_context'))
 
     service_name = settings.get('service_name', 'unknown')
-    span_name = '{0} {1}'.format(request.method, request.path)
+    span_name = f'{request.method} {request.path}'
     add_logging_annotation = settings.get(
         'zipkin.add_logging_annotation',
         False,
