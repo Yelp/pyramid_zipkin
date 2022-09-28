@@ -164,7 +164,7 @@ def zipkin_tween(handler: Handler, registry: Registry) -> Handler:
 
     :returns: pyramid tween
     """
-    def tween(request):
+    def tween(request: Request) -> Response:
         zipkin_settings = _get_settings_from_request(request)
         tracer = get_default_tracer()
 

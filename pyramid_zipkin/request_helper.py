@@ -2,6 +2,7 @@ import random
 import re
 import struct
 from typing import Dict
+from typing import Optional
 
 from py_zipkin.util import generate_random_64bit_string
 from py_zipkin.zipkin import ZipkinAttrs
@@ -157,7 +158,7 @@ def create_zipkin_attr(request: Request) -> ZipkinAttrs:
 def get_binary_annotations(
     request: Request,
     response: Response,
-) -> Dict[str, str]:
+) -> Dict[str, Optional[str]]:
     """Helper method for getting all binary annotations from the request.
 
     :param request: the Pyramid request object
