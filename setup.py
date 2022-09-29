@@ -14,7 +14,10 @@ setup(
     url="https://github.com/Yelp/pyramid_zipkin",
     description='Zipkin instrumentation for the Pyramid framework.',
     packages=find_packages(exclude=('tests*',)),
-    package_data={'': ['*.thrift']},
+    package_data={
+        '': ['*.thrift'],
+        'pyramid_zipkin': ['py.typed'],
+    },
     install_requires=[
         'py_zipkin >= 0.18.1',
         'pyramid',
