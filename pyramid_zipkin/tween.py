@@ -1,12 +1,17 @@
 import functools
 import warnings
 from collections import namedtuple
+from typing import Any
+from typing import Callable
 
 from py_zipkin import Encoding
 from py_zipkin import Kind
 from py_zipkin.exception import ZipkinError
 from py_zipkin.storage import get_default_tracer
 from py_zipkin.transport import BaseTransportHandler
+from pyramid.registry import Registry
+from pyramid.request import Request
+from pyramid.response import Response
 
 from pyramid_zipkin.request_helper import create_zipkin_attr
 from pyramid_zipkin.request_helper import get_binary_annotations
@@ -14,7 +19,7 @@ from pyramid_zipkin.request_helper import should_not_sample_path
 from pyramid_zipkin.request_helper import should_not_sample_route
 
 
-def _getattr_path(obj, path):
+def _getattr_path(obj: Any, path: str) -> Any:
     """
     getattr for a dot separated path
 
@@ -28,7 +33,7 @@ def _getattr_path(obj, path):
     return obj
 
 
-_ZipkinSettings = namedtuple('ZipkinSettings', [
+_ZipkinSettings = namedtuple('_ZipkinSettings', [
     'zipkin_attrs',
     'transport_handler',
     'service_name',
@@ -46,7 +51,7 @@ _ZipkinSettings = namedtuple('ZipkinSettings', [
 ])
 
 
-def _get_settings_from_request(request):
+def _get_settings_from_request(request: Request) -> _ZipkinSettings:
     """Extracts Zipkin attributes and configuration from request attributes.
     See the `zipkin_span` context in py-zipkin for more detaied information on
     all the settings.
@@ -141,7 +146,10 @@ def _get_settings_from_request(request):
     )
 
 
-def zipkin_tween(handler, registry):
+Handler = Callable[[Request], Response]
+
+
+def zipkin_tween(handler: Handler, registry: Registry) -> Handler:
     """
     Factory for pyramid tween to handle zipkin server logging. Note that even
     if the request isn't sampled, Zipkin attributes are generated and pushed
@@ -156,7 +164,7 @@ def zipkin_tween(handler, registry):
 
     :returns: pyramid tween
     """
-    def tween(request):
+    def tween(request: Request) -> Response:
         zipkin_settings = _get_settings_from_request(request)
         tracer = get_default_tracer()
 

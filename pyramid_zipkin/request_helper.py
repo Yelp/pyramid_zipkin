@@ -1,16 +1,20 @@
 import random
 import re
 import struct
+from typing import Dict
+from typing import Optional
 
 from py_zipkin.util import generate_random_64bit_string
 from py_zipkin.zipkin import ZipkinAttrs
 from pyramid.interfaces import IRoutesMapper
+from pyramid.request import Request
+from pyramid.response import Response
 
 
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5
 
 
-def get_trace_id(request):
+def get_trace_id(request: Request) -> str:
     """Gets the trace id based on a request. If not present with the request,
     create a custom (depending on config: `zipkin.trace_id_generator`) or a
     completely random trace id.
@@ -32,7 +36,7 @@ def get_trace_id(request):
     return trace_id
 
 
-def _convert_signed_hex(s):
+def _convert_signed_hex(s: str) -> str:
     """Takes a signed hex string that begins with '0x' and converts it to
     a 16-character string representing an unsigned hex value.
     Examples:
@@ -44,7 +48,7 @@ def _convert_signed_hex(s):
     return s.zfill(16)
 
 
-def should_not_sample_path(request):
+def should_not_sample_path(request: Request) -> bool:
     """Decided whether current request path should be sampled or not. This is
     checked previous to `should_not_sample_route` and takes precedence.
 
@@ -62,7 +66,7 @@ def should_not_sample_path(request):
     return any(r.match(request.path) for r in regexes)
 
 
-def should_not_sample_route(request):
+def should_not_sample_route(request: Request) -> bool:
     """Decided whether current request route should be sampled or not.
 
     :param: current active pyramid request
@@ -78,7 +82,7 @@ def should_not_sample_route(request):
     return (route_info and route_info.name in blacklisted_routes)
 
 
-def should_sample_as_per_zipkin_tracing_percent(tracing_percent):
+def should_sample_as_per_zipkin_tracing_percent(tracing_percent: float) -> bool:
     """Calculate whether the request should be traced as per tracing percent.
 
     :param tracing_percent: value between 0.0 to 100.0
@@ -88,7 +92,7 @@ def should_sample_as_per_zipkin_tracing_percent(tracing_percent):
     return (random.random() * 100) < tracing_percent
 
 
-def is_tracing(request):
+def is_tracing(request: Request) -> bool:
     """Determine if zipkin should be tracing
     1) Check whether the current request path is blacklisted.
     2) If not, check whether the current request route is blacklisted.
@@ -112,7 +116,7 @@ def is_tracing(request):
             zipkin_tracing_percent)
 
 
-def create_zipkin_attr(request):
+def create_zipkin_attr(request: Request) -> ZipkinAttrs:
     """Create ZipkinAttrs object from a request with sampled flag as True.
     Attaches lazy attribute `zipkin_trace_id` with request which is then used
     throughout the tween.
@@ -151,7 +155,10 @@ def create_zipkin_attr(request):
     )
 
 
-def get_binary_annotations(request, response):
+def get_binary_annotations(
+    request: Request,
+    response: Response,
+) -> Dict[str, Optional[str]]:
     """Helper method for getting all binary annotations from the request.
 
     :param request: the Pyramid request object
