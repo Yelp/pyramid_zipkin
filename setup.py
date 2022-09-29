@@ -2,7 +2,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 setup(
     name='pyramid_zipkin',
