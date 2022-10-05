@@ -1,13 +1,11 @@
 import json
 from unittest import mock
 
-import pytest
 from webtest import TestApp as WebTestApp
 
 from tests.acceptance.test_helper import generate_app_main
 
 
-@pytest.mark.skip(reason='failing')
 def test_log_new_client_spans(default_trace_id_generator):
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
@@ -31,10 +29,10 @@ def test_log_new_client_spans(default_trace_id_generator):
         assert client_span['parentId'] == server_span['id']
     assert foo_span['id'] != bar_span['id']
     assert foo_span['annotations'] == [
-        {'timestamp': 2000000, 'value': 'foo_client'},
+        {'timestamp': 1664500002000000, 'value': 'foo_client'},
     ]
     assert bar_span['annotations'] == [
-        {'timestamp': 1000000, 'value': 'bar_client'},
+        {'timestamp': 1664500001000000, 'value': 'bar_client'},
     ]
 
 
@@ -87,7 +85,6 @@ def _assert_headers_present(settings, is_sampled):
     assert expected == headers_json
 
 
-@pytest.mark.skip(reason='failing')
 def test_span_context(default_trace_id_generator):
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
@@ -113,11 +110,11 @@ def test_span_context(default_trace_id_generator):
     assert grandchild_span['parentId'] == child_span['id']
     # Assert annotations are properly assigned
     assert child_span['annotations'] == [
-        {'timestamp': 1000000, 'value': 'child_annotation'},
+        {'timestamp': 1664500000000000, 'value': 'child_annotation'},
     ]
     assert child_span['tags'] == {'foo': 'bar', 'child': 'true'}
     assert grandchild_span['annotations'] == [
-        {'timestamp': 1000000, 'value': 'grandchild_annotation'},
+        {'timestamp': 1664500000000000, 'value': 'grandchild_annotation'},
     ]
     assert grandchild_span['tags'] == {'grandchild': 'true'}
 

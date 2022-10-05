@@ -17,7 +17,7 @@ def sample_v2(dummy_request):
     with zipkin_span(
         service_name='root_service',
         span_name='v2',
-        annotations={'foo': 2, 'bar': 1},
+        annotations={'foo': 1664500002.0, 'bar': 1664500001.0},
         binary_annotations={'ping': 'pong'},
     ):
         return {}
@@ -28,13 +28,13 @@ def sample_v2_client(dummy_request):
     with zipkin_span(
         service_name='foo_service',
         span_name='v2_client',
-        annotations={'foo_client': 2},
+        annotations={'foo_client': 1664500002.0},
     ):
         pass
     with zipkin_span(
         service_name='bar_service',
         span_name='v2_client',
-        annotations={'bar_client': 1},
+        annotations={'bar_client': 1664500001.0},
     ):
         pass
     return {}
@@ -46,13 +46,13 @@ def span_context(dummy_request):
     with zipkin_span(
         service_name='child',
         span_name='get',
-        annotations={'child_annotation': 1},
+        annotations={'child_annotation': 1664500000.0},
         binary_annotations={'foo': 'bar', 'child': 'true'},
     ):
         with zipkin_span(
             service_name='grandchild',
             span_name='put',
-            annotations={'grandchild_annotation': 1},
+            annotations={'grandchild_annotation': 1664500000.0},
             binary_annotations={'grandchild': 'true'},
         ):
             return {}
