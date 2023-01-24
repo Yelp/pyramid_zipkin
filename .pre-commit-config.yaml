@@ -1,5 +1,6 @@
+repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    sha: v0.9.1
+    rev: v0.9.1
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -19,7 +20,7 @@
         - --max-line-length=82
         exclude: docs/source/conf.py
 -   repo: https://github.com/asottile/reorder_python_imports.git
-    sha: v0.3.5
+    rev: v0.3.5
     hooks:
     -   id: reorder-python-imports
         language_version: python3.7
