@@ -127,7 +127,7 @@ def _get_settings_from_request(request: Request) -> _ZipkinSettings:
     use_pattern_as_span_name = bool(
         settings.get('zipkin.use_pattern_as_span_name', False),
     )
-    encoding = settings.get('zipkin.encoding', Encoding.V1_THRIFT)
+    encoding = settings.get('zipkin.encoding', Encoding.V2_JSON)
     return _ZipkinSettings(
         zipkin_attrs,
         transport_handler,
