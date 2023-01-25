@@ -1,3 +1,9 @@
+2.1.2 (2023-01-25)
+-------------------
+- Use V2_JSON zipkin encoding by default
+- Updated README.md
+
+
 1.0.1 (2021-10-28)
 -------------------
 - Fixed a flake8 formatting related failure from 1.0.0

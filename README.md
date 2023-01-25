@@ -36,7 +36,16 @@ In your service's webapp, you need to include:
     config.include('pyramid_zipkin')
 ```
 
+## Deployment
+To bump and deploy a new version after changes have been merged into master, follow these steps:
+- `$ git checkout master && git pull`
+- update `CHANGELOG.rst` to document the changes
+- update `__version__` in `setup.py`
+- `$ git add CHANGELOG.rst setup.py && git commit -m 'version <VERSION>'`
+- `$ git tag v<VERSION>`
+- `$ git push origin master --tags`
+
 License
 -------
 
-Copyright (c) 2018, Yelp, Inc. All rights reserved. Apache v2
+Copyright (c) 2023, Yelp, Inc. All rights reserved. Apache v2
