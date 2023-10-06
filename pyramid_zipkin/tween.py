@@ -192,8 +192,8 @@ def zipkin_tween(handler: Handler, registry: Registry) -> Handler:
             tween_kwargs['firehose_handler'] = zipkin_settings.firehose_handler
 
         with tracer.zipkin_span(**tween_kwargs) as zipkin_context:
+            response = None
             try:
-                response = None
                 response = handler(request)
             except Exception as e:
                 zipkin_context.update_binary_annotations({

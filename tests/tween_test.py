@@ -109,7 +109,7 @@ def test_zipkin_tween_exception(
     try:
         tween.zipkin_tween(handler, dummy_response)(get_request)
         pytest.fail('exception was expected to be thrown!')
-    except:
+    except Exception:
         pass
 
     spans = transport.get_payloads()

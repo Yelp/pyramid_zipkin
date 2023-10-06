@@ -18,7 +18,7 @@ class MockTransport(BaseTransportHandler):
         """Returns the encoded spans that were sent.
 
         Spans are batched before being sent, so most of the time the returned
-        list will contain only one element. Each element is gonna be an encoded
+        list will contain only one element. Each element is going to be an encoded
         list of spans.
         """
         return self.output
