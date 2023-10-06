@@ -79,6 +79,7 @@ def test_zipkin_tween_post_handler_hook(
             mock_span.return_value.__enter__.return_value,
         )
 
+
 @pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
 @pytest.mark.parametrize('is_tracing', [True])
 def test_zipkin_tween_exception(
@@ -89,7 +90,7 @@ def test_zipkin_tween_exception(
     called,
 ):
     """
-    If request processing throws an exception verify response_status_code = 500 is being set
+    If request processing has an exception set response_status_code to 500
     """
 
     mock_post_handler_hook = mock.Mock()
@@ -107,8 +108,8 @@ def test_zipkin_tween_exception(
 
     try:
         tween.zipkin_tween(handler, dummy_response)(get_request)
-        pytest.fail('exception was expected to be thrown')
-    except Exception as e:
+        pytest.fail('exception was expected to be thrown!')
+    except:
         pass
 
     spans = transport.get_payloads()
@@ -147,7 +148,6 @@ def test_zipkin_tween_no_exception(
     spans = transport.get_payloads()
     assert len(spans) == 1
     span = json.loads(spans[0])[0]
-    span = decoded_spans[0]
     span['tags']['response_status_code'] = '200'
 
     assert handler.call_count == 1
