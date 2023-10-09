@@ -11,8 +11,17 @@ class MockTransport(BaseTransportHandler):
     def get_max_payload_bytes(self):
         return None
 
-    def send(self, msg):
-        self.output.append(msg)
+    def send(self, payload):
+        self.output.append(payload)
+
+    def get_payloads(self):
+        """Returns the encoded spans that were sent.
+
+        Spans are batched before being sent, so most of the time the returned
+        list will contain only one element. Each element is going to be an encoded
+        list of spans.
+        """
+        return self.output
 
 
 def generate_app_main(settings, firehose=False):

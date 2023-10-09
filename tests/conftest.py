@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+from pyramid.request import Request
 
 from pyramid_zipkin import request_helper
 
@@ -12,6 +13,16 @@ def dummy_request():
     request.headers = {}
     request.unique_request_id = '17133d482ba4f605'
     request.path = 'bla'
+    return request
+
+
+@pytest.fixture
+def get_request():
+    request = Request.blank('GET /sample')
+    request.registry = mock.Mock()
+    request.registry.settings = {}
+    request.headers = {}
+    request.unique_request_id = '17133d482ba4f605'
     return request
 
 

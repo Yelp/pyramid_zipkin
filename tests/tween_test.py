@@ -1,4 +1,5 @@
 import collections
+import json
 from unittest import mock
 
 import pytest
@@ -77,6 +78,80 @@ def test_zipkin_tween_post_handler_hook(
             dummy_response,
             mock_span.return_value.__enter__.return_value,
         )
+
+
+@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
+@pytest.mark.parametrize('is_tracing', [True])
+def test_zipkin_tween_exception(
+    get_request,
+    dummy_response,
+    is_tracing,
+    set_callback,
+    called,
+):
+    """
+    If request processing has an exception set response_status_code to 500
+    """
+
+    mock_post_handler_hook = mock.Mock()
+    transport = MockTransport()
+
+    get_request.registry.settings = {
+        'zipkin.is_tracing': lambda _: is_tracing,
+        'zipkin.transport_handler': transport,
+    }
+    if set_callback:
+        get_request.registry.settings['zipkin.post_handler_hook'] = \
+            mock_post_handler_hook
+
+    handler = mock.Mock(side_effect=Exception)
+
+    try:
+        tween.zipkin_tween(handler, dummy_response)(get_request)
+        pytest.fail('exception was expected to be thrown!')
+    except Exception:
+        pass
+
+    spans = transport.get_payloads()
+    assert len(spans) == 1
+    span = json.loads(spans[0])[0]
+    span['tags']['response_status_code'] = '500'
+    span['tags']['error.type'] = 'Exception'
+
+    assert handler.call_count == 1
+    assert mock_post_handler_hook.call_count == called
+
+
+@pytest.mark.parametrize(['set_callback', 'called'], [(False, 0), (True, 1)])
+@pytest.mark.parametrize('is_tracing', [True])
+def test_zipkin_tween_no_exception(
+    get_request,
+    dummy_response,
+    is_tracing,
+    set_callback,
+    called,
+):
+    mock_post_handler_hook = mock.Mock()
+    transport = MockTransport()
+
+    get_request.registry.settings = {
+        'zipkin.is_tracing': lambda _: is_tracing,
+        'zipkin.transport_handler': transport,
+    }
+    if set_callback:
+        get_request.registry.settings['zipkin.post_handler_hook'] = \
+            mock_post_handler_hook
+
+    handler = mock.Mock()
+    tween.zipkin_tween(handler, dummy_response)(get_request)
+
+    spans = transport.get_payloads()
+    assert len(spans) == 1
+    span = json.loads(spans[0])[0]
+    span['tags']['response_status_code'] = '200'
+
+    assert handler.call_count == 1
+    assert mock_post_handler_hook.call_count == called
 
 
 def test_zipkin_tween_context_stack(
