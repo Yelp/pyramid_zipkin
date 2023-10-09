@@ -1,3 +1,7 @@
+2.1.3 (2023-10-09)
+-------------------
+- Handle exceptions during request processing to set response_status_code=500 and error.type
+
 2.1.2 (2023-01-25)
 -------------------
 - Use V2_JSON zipkin encoding by default
