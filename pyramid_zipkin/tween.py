@@ -197,7 +197,7 @@ def zipkin_tween(handler: Handler, registry: Registry) -> Handler:
                 response = handler(request)
             except Exception as e:
                 zipkin_context.update_binary_annotations({
-                    'error_type': type(e).__name__,
+                    'error.type': type(e).__name__,
                     'response_status_code': '500'
                 })
                 raise e

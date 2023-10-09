@@ -116,7 +116,7 @@ def test_zipkin_tween_exception(
     assert len(spans) == 1
     span = json.loads(spans[0])[0]
     span['tags']['response_status_code'] = '500'
-    span['tags']['error_type'] = 'Exception'
+    span['tags']['error.type'] = 'Exception'
 
     assert handler.call_count == 1
     assert mock_post_handler_hook.call_count == called
