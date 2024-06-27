@@ -90,7 +90,8 @@ def test_zipkin_tween_exception(
     called,
 ):
     """
-    If request processing has an exception set response_status_code and http.response.status_code to 500
+    If request processing has an exception set
+    response_status_code and http.response.status_code to 500
     """
 
     mock_post_handler_hook = mock.Mock()
