@@ -2,4 +2,5 @@ coverage
 mypy
 ordereddict
 pytest
+tox
 webtest

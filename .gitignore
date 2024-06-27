@@ -10,3 +10,5 @@ dist/
 venv
 tags
 *.swp
+.idea/
+.vscode/
