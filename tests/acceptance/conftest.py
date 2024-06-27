@@ -25,6 +25,7 @@ def get_span():
             'http.uri.qs': '/sample',
             'http.route': '/sample',
             'response_status_code': '200',
+            'http.response.status_code': '200',
         },
         'name': 'GET /sample',
         'traceId': '17133d482ba4f605',

@@ -174,6 +174,7 @@ def get_binary_annotations(
     }
     if response:
         annotations['response_status_code'] = str(response.status_code)
+        annotations['http.response.status_code'] = str(response.status_code)
 
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:

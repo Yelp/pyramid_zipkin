@@ -173,6 +173,7 @@ def test_binary_annotations(default_trace_id_generator):
         'http.uri.qs': '/pet/123?test=1',
         'http.route': '/pet/{petId}',
         'response_status_code': '200',
+        'http.response.status_code': '200',
         'other': '42',
     }
 
@@ -196,6 +197,7 @@ def test_binary_annotations_404(default_trace_id_generator):
         'http.uri.qs': '/abcd?test=1',
         'http.route': '',
         'response_status_code': '404',
+        'http.response.status_code': '404',
     }
 
 
