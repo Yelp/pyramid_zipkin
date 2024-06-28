@@ -2,6 +2,8 @@ from unittest import mock
 
 import pytest
 
+from pyramid_zipkin.version import __version__
+
 
 @pytest.fixture
 def default_trace_id_generator(dummy_request):
@@ -33,6 +35,8 @@ def get_span():
             'http.response.status_code': '200',
             'http.request.method': 'GET',
             'otel.status_code': 'Ok',
+            'otel.library.version': __version__,
+            'otel.library.name': 'pyramid_zipkin',
         },
         'name': 'GET /sample',
         'traceId': '17133d482ba4f605',

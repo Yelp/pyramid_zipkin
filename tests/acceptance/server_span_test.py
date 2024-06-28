@@ -8,6 +8,7 @@ from py_zipkin.zipkin import ZipkinAttrs
 from webtest import TestApp as WebTestApp
 
 from .app import main
+from pyramid_zipkin.version import __version__
 from tests.acceptance.test_helper import generate_app_main
 
 
@@ -183,6 +184,8 @@ def test_binary_annotations(default_trace_id_generator):
         'url.scheme': 'http',
         'url.query': 'test=1',
         'other': '42',
+        'otel.library.version': __version__,
+        'otel.library.name': mock.ANY,
     }
 
 
@@ -212,6 +215,8 @@ def test_binary_annotations_404(default_trace_id_generator):
         'url.path': '/abcd',
         'url.query': 'test=1',
         'url.scheme': 'http',
+        'otel.library.version': __version__,
+        'otel.library.name': 'pyramid_zipkin',
     }
 
 
@@ -242,6 +247,8 @@ def test_binary_annotations_500(default_trace_id_generator):
         'server.port': '80',
         'url.path': '/server_error',
         'url.scheme': 'http',
+        'otel.library.version': __version__,
+        'otel.library.name': 'pyramid_zipkin',
     }
 
 

@@ -10,6 +10,8 @@ from pyramid.interfaces import IRoutesMapper
 from pyramid.request import Request
 from pyramid.response import Response
 
+from pyramid_zipkin.version import __version__
+
 
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5
 
@@ -175,6 +177,8 @@ def get_binary_annotations(
         'url.scheme': request.scheme,
         'http.uri': request.path,
         'http.uri.qs': request.path_qs,
+        'otel.library.name': __name__.split('.')[0],
+        'otel.library.version': __version__,
     }
 
     if request.user_agent:
@@ -192,12 +196,18 @@ def get_binary_annotations(
     if response:
         status_code = response.status_code
         if isinstance(status_code, int):
+            annotations['http.response.status_code'] = str(status_code)
+            annotations['response_status_code'] = str(status_code)
             if status_code >= 500:
                 annotations['otel.status_code'] = 'Error'
             elif 200 <= status_code < 300:
                 annotations['otel.status_code'] = 'Ok'
-        annotations['http.response.status_code'] = str(status_code)
-        annotations['response_status_code'] = str(status_code)
+
+        else:
+            annotations['otel.status_code'] = 'Error'
+            annotations['otel.status_description'] = (
+                f'Non-integer HTTP status code: {repr(status_code)}'
+            )
 
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:
