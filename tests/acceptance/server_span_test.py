@@ -174,6 +174,14 @@ def test_binary_annotations(default_trace_id_generator):
         'http.route': '/pet/{petId}',
         'response_status_code': '200',
         'http.response.status_code': '200',
+        'http.request.method': 'GET',
+        'otel.status_code': 'Ok',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/pet/123',
+        'url.scheme': 'http',
+        'url.query': 'test=1',
         'other': '42',
     }
 
@@ -195,9 +203,45 @@ def test_binary_annotations_404(default_trace_id_generator):
     assert span['tags'] == {
         'http.uri': '/abcd',
         'http.uri.qs': '/abcd?test=1',
-        'http.route': '',
         'response_status_code': '404',
+        'http.request.method': 'GET',
         'http.response.status_code': '404',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/abcd',
+        'url.query': 'test=1',
+        'url.scheme': 'http',
+    }
+
+
+def test_binary_annotations_500(default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    WebTestApp(app_main).get('/server_error', status=500)
+
+    assert len(transport.output) == 1
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['tags'] == {
+        'http.uri': '/server_error',
+        'http.uri.qs': '/server_error',
+        'http.route': '/server_error',
+        'response_status_code': '500',
+        'http.request.method': 'GET',
+        'http.response.status_code': '500',
+        'otel.status_code': 'Error',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/server_error',
+        'url.scheme': 'http',
     }
 
 

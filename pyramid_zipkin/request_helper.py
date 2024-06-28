@@ -165,16 +165,39 @@ def get_binary_annotations(
     :param response: the Pyramid response object
     :returns: binary annotation dict of {str: str}
     """
-    route = request.matched_route.pattern if request.matched_route else ''
 
     annotations = {
+        'http.request.method': request.method,
+        'network.protocol.version': request.http_version,
+        'url.path': request.path,
+        'server.address': request.server_name,
+        'server.port': str(request.server_port),
+        'url.scheme': request.scheme,
         'http.uri': request.path,
         'http.uri.qs': request.path_qs,
-        'http.route': route,
     }
+
+    if request.user_agent:
+        annotations['user_agent.original'] = request.user_agent
+
+    if request.query_string:
+        annotations["url.query"] = request.query_string
+
+    if request.matched_route:
+        annotations['http.route'] = request.matched_route.pattern
+
+    if request.client_addr:
+        annotations['client.address'] = request.client_addr
+
     if response:
-        annotations['response_status_code'] = str(response.status_code)
-        annotations['http.response.status_code'] = str(response.status_code)
+        status_code = response.status_code
+        if isinstance(status_code, int):
+            if status_code >= 500:
+                annotations['otel.status_code'] = 'Error'
+            elif 200 <= status_code < 300:
+                annotations['otel.status_code'] = 'Ok'
+        annotations['http.response.status_code'] = str(status_code)
+        annotations['response_status_code'] = str(status_code)
 
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:
