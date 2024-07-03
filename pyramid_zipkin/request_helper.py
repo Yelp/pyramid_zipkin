@@ -198,10 +198,14 @@ def get_binary_annotations(
         if isinstance(status_code, int):
             annotations['http.response.status_code'] = str(status_code)
             annotations['response_status_code'] = str(status_code)
-            if status_code >= 500:
-                annotations['otel.status_code'] = 'Error'
+            if 100 <= status_code < 200:
+                annotations['otel.status_code'] = 'Unset'
             elif 200 <= status_code < 300:
                 annotations['otel.status_code'] = 'Ok'
+            elif 300 <= status_code < 500:
+                annotations['otel.status_code'] = 'Unset'
+            else:
+                annotations['otel.status_code'] = 'Error'
 
         else:
             annotations['otel.status_code'] = 'Error'
