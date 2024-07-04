@@ -90,7 +90,8 @@ def test_zipkin_tween_exception(
     called,
 ):
     """
-    If request processing has an exception set response_status_code to 500
+    If request processing has an exception set
+    response_status_code and http.response.status_code to 500
     """
 
     mock_post_handler_hook = mock.Mock()
@@ -116,6 +117,7 @@ def test_zipkin_tween_exception(
     assert len(spans) == 1
     span = json.loads(spans[0])[0]
     span['tags']['response_status_code'] = '500'
+    span['tags']['http.response.status_code'] = '500'
     span['tags']['error.type'] = 'Exception'
 
     assert handler.call_count == 1
@@ -149,6 +151,7 @@ def test_zipkin_tween_no_exception(
     assert len(spans) == 1
     span = json.loads(spans[0])[0]
     span['tags']['response_status_code'] = '200'
+    span['tags']['http.response.status_code'] = '200'
 
     assert handler.call_count == 1
     assert mock_post_handler_hook.call_count == called

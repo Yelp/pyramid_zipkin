@@ -8,6 +8,7 @@ from py_zipkin.zipkin import ZipkinAttrs
 from webtest import TestApp as WebTestApp
 
 from .app import main
+from pyramid_zipkin.version import __version__
 from tests.acceptance.test_helper import generate_app_main
 
 
@@ -173,7 +174,18 @@ def test_binary_annotations(default_trace_id_generator):
         'http.uri.qs': '/pet/123?test=1',
         'http.route': '/pet/{petId}',
         'response_status_code': '200',
+        'http.response.status_code': '200',
+        'http.request.method': 'GET',
+        'otel.status_code': 'Ok',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/pet/123',
+        'url.scheme': 'http',
+        'url.query': 'test=1',
         'other': '42',
+        'otel.library.version': __version__,
+        'otel.library.name': mock.ANY,
     }
 
 
@@ -194,8 +206,114 @@ def test_binary_annotations_404(default_trace_id_generator):
     assert span['tags'] == {
         'http.uri': '/abcd',
         'http.uri.qs': '/abcd?test=1',
-        'http.route': '',
         'response_status_code': '404',
+        'http.request.method': 'GET',
+        'http.response.status_code': '404',
+        'otel.status_code': 'Unset',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/abcd',
+        'url.query': 'test=1',
+        'url.scheme': 'http',
+        'otel.library.version': __version__,
+        'otel.library.name': 'pyramid_zipkin',
+    }
+
+
+def test_information_route(default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    WebTestApp(app_main).get('/information_route', status=199)
+
+    assert len(transport.output) == 1
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['tags'] == {
+        'http.uri': '/information_route',
+        'http.uri.qs': '/information_route',
+        'http.route': '/information_route',
+        'response_status_code': '199',
+        'http.request.method': 'GET',
+        'http.response.status_code': '199',
+        'otel.status_code': 'Unset',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/information_route',
+        'url.scheme': 'http',
+        'otel.library.version': __version__,
+        'otel.library.name': 'pyramid_zipkin',
+    }
+
+
+def test_redirect(default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    WebTestApp(app_main).get('/redirect', status=302)
+
+    assert len(transport.output) == 1
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['tags'] == {
+        'http.uri': '/redirect',
+        'http.uri.qs': '/redirect',
+        'http.route': '/redirect',
+        'response_status_code': '302',
+        'http.request.method': 'GET',
+        'http.response.status_code': '302',
+        'otel.status_code': 'Unset',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/redirect',
+        'url.scheme': 'http',
+        'otel.library.version': __version__,
+        'otel.library.name': 'pyramid_zipkin',
+    }
+
+
+def test_binary_annotations_500(default_trace_id_generator):
+    settings = {
+        'zipkin.tracing_percent': 100,
+        'zipkin.trace_id_generator': default_trace_id_generator,
+    }
+    app_main, transport, _ = generate_app_main(settings)
+
+    WebTestApp(app_main).get('/server_error', status=500)
+
+    assert len(transport.output) == 1
+    spans = json.loads(transport.output[0])
+    assert len(spans) == 1
+
+    span = spans[0]
+    assert span['tags'] == {
+        'http.uri': '/server_error',
+        'http.uri.qs': '/server_error',
+        'http.route': '/server_error',
+        'response_status_code': '500',
+        'http.request.method': 'GET',
+        'http.response.status_code': '500',
+        'otel.status_code': 'Error',
+        'network.protocol.version': 'HTTP/1.0',
+        'server.address': 'localhost',
+        'server.port': '80',
+        'url.path': '/server_error',
+        'url.scheme': 'http',
+        'otel.library.version': __version__,
+        'otel.library.name': 'pyramid_zipkin',
     }
 
 

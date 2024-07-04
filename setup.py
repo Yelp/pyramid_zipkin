@@ -2,11 +2,11 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '2.2.0'
+version = exec(open('pyramid_zipkin/version.py').read())
 
 setup(
     name='pyramid_zipkin',
-    version=__version__,
+    version=version,
     provides=["pyramid_zipkin"],
     author='Yelp, Inc.',
     author_email='opensource+pyramid-zipkin@yelp.com',
@@ -28,8 +28,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
 )

@@ -96,6 +96,20 @@ def client_error(dummy_request):
     return response
 
 
+@view_config(route_name='redirect', renderer='json')
+def redirect(dummy_request):
+    response = Response('Redirectional')
+    response.status_int = 302
+    return response
+
+
+@view_config(route_name='information_route', renderer='json')
+def information_route(dummy_request):
+    response = Response('Informational')
+    response.status_int = 199
+    return response
+
+
 def main(global_config, **settings):
     """ Very basic pyramid app """
     settings['service_name'] = 'acceptance_service'
@@ -114,6 +128,8 @@ def main(global_config, **settings):
 
     config.add_route('server_error', '/server_error')
     config.add_route('client_error', '/client_error')
+    config.add_route('information_route', '/information_route')
+    config.add_route('redirect', '/redirect')
 
     config.scan()
 

@@ -10,6 +10,8 @@ from pyramid.interfaces import IRoutesMapper
 from pyramid.request import Request
 from pyramid.response import Response
 
+from pyramid_zipkin.version import __version__
+
 
 DEFAULT_REQUEST_TRACING_PERCENT = 0.5
 
@@ -165,15 +167,51 @@ def get_binary_annotations(
     :param response: the Pyramid response object
     :returns: binary annotation dict of {str: str}
     """
-    route = request.matched_route.pattern if request.matched_route else ''
 
     annotations = {
+        'http.request.method': request.method,
+        'network.protocol.version': request.http_version,
+        'url.path': request.path,
+        'server.address': request.server_name,
+        'server.port': str(request.server_port),
+        'url.scheme': request.scheme,
         'http.uri': request.path,
         'http.uri.qs': request.path_qs,
-        'http.route': route,
+        'otel.library.name': __name__.split('.')[0],
+        'otel.library.version': __version__,
     }
+
+    if request.user_agent:
+        annotations['user_agent.original'] = request.user_agent
+
+    if request.query_string:
+        annotations["url.query"] = request.query_string
+
+    if request.matched_route:
+        annotations['http.route'] = request.matched_route.pattern
+
+    if request.client_addr:
+        annotations['client.address'] = request.client_addr
+
     if response:
-        annotations['response_status_code'] = str(response.status_code)
+        status_code = response.status_code
+        if isinstance(status_code, int):
+            annotations['http.response.status_code'] = str(status_code)
+            annotations['response_status_code'] = str(status_code)
+            if 100 <= status_code < 200:
+                annotations['otel.status_code'] = 'Unset'
+            elif 200 <= status_code < 300:
+                annotations['otel.status_code'] = 'Ok'
+            elif 300 <= status_code < 500:
+                annotations['otel.status_code'] = 'Unset'
+            else:
+                annotations['otel.status_code'] = 'Error'
+
+        else:
+            annotations['otel.status_code'] = 'Error'
+            annotations['otel.status_description'] = (
+                f'Non-integer HTTP status code: {repr(status_code)}'
+            )
 
     settings = request.registry.settings
     if 'zipkin.set_extra_binary_annotations' in settings:

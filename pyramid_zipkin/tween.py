@@ -1,4 +1,5 @@
 import functools
+import traceback
 import warnings
 from collections import namedtuple
 from typing import Any
@@ -196,10 +197,15 @@ def zipkin_tween(handler: Handler, registry: Registry) -> Handler:
             try:
                 response = handler(request)
             except Exception as e:
+                exception_type = type(e).__name__
+                exception_stacktrace = traceback.format_exc()
                 zipkin_context.update_binary_annotations({
-                    'error.type': type(e).__name__,
-                    'response_status_code': '500'
+                    'error.type': exception_type,
+                    'response_status_code': '500',
+                    'http.response.status_code': '500',
+                    'exception.stacktrace': exception_stacktrace,
                 })
+                zipkin_context.add_annotation(exception_type)
                 raise e
             finally:
                 if zipkin_settings.use_pattern_as_span_name \
