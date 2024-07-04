@@ -2,7 +2,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-version = exec(open('pyramid_zipkin/version.py').read())
+from pyramid_zipkin.version import __version__ as version
 
 setup(
     name='pyramid_zipkin',

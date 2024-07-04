@@ -1,3 +1,23 @@
+2.2.1 (2024-07-04)
+-------------------
+- Requires Python >= 3.8
+- Adds OTels semantic conventions for http server span attributes
+  - `http.request.method`
+  - `network.protocol.version`
+  - `url.path`
+  - `server.address`
+  - `server.port`
+  - `url.scheme`
+  - `user_agent.original`
+  - `url.query`
+  - `client.address`
+  - `http.response.status_code`
+  - `otel.status_code`
+  - `otel.library.name`
+  - `otel.library.version`
+- Adds the Zipkin Annotation (OTel Event) when an exception occures as the type of exception
+- Adds `exception.stacktrace` as an attribute if an exception occurs
+
 2.1.3 (2023-10-09)
 -------------------
 - Handle exceptions during request processing to set response_status_code=500 and error.type
