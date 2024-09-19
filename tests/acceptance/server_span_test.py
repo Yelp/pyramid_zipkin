@@ -17,15 +17,13 @@ from tests.acceptance.test_helper import generate_app_main
     (True, 1),
 ])
 def test_sample_server_span_with_100_percent_tracing(
-    default_trace_id_generator,
     get_span,
+    mock_generate_random_128bit_string,
+    mock_generate_random_64bit_string,
     set_post_handler_hook,
     called,
 ):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 100}
 
     mock_post_handler_hook = mock.Mock()
     if set_post_handler_hook:
@@ -35,11 +33,7 @@ def test_sample_server_span_with_100_percent_tracing(
 
     old_time = time.time() * 1000000
 
-    with mock.patch(
-        'pyramid_zipkin.request_helper.generate_random_64bit_string'
-    ) as mock_generate_random_64bit_string:
-        mock_generate_random_64bit_string.return_value = '1'
-        WebTestApp(app_main).get('/sample', status=200)
+    WebTestApp(app_main).get('/sample', status=200)
 
     assert mock_post_handler_hook.call_count == called
     assert len(transport.output) == 1
@@ -47,7 +41,7 @@ def test_sample_server_span_with_100_percent_tracing(
     assert len(spans) == 1
 
     span = spans[0]
-    assert span['id'] == '1'
+    assert span['id'] == '17133d482ba4f605'
     assert span['kind'] == 'SERVER'
     assert span['timestamp'] > old_time
     assert span['duration'] > 0
@@ -56,8 +50,8 @@ def test_sample_server_span_with_100_percent_tracing(
     assert span == get_span
 
 
-def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
-    settings = {'zipkin.trace_id_generator': default_trace_id_generator}
+def test_upstream_zipkin_headers_sampled():
+    settings = {}
     app_main, transport, _ = generate_app_main(settings)
 
     trace_hex = 'aaaaaaaaaaaaaaaa'
@@ -92,14 +86,10 @@ def test_upstream_zipkin_headers_sampled(default_trace_id_generator):
     (True, 1),
 ])
 def test_unsampled_request_has_no_span(
-    default_trace_id_generator,
     set_post_handler_hook,
     called,
 ):
-    settings = {
-        'zipkin.tracing_percent': 0,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 0}
 
     mock_post_handler_hook = mock.Mock()
     if set_post_handler_hook:
@@ -113,10 +103,9 @@ def test_unsampled_request_has_no_span(
     assert mock_post_handler_hook.call_count == called
 
 
-def test_blacklisted_route_has_no_span(default_trace_id_generator):
+def test_blacklisted_route_has_no_span():
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_routes': ['sample_route'],
     }
     app_main, transport, firehose = generate_app_main(settings, firehose=True)
@@ -127,10 +116,9 @@ def test_blacklisted_route_has_no_span(default_trace_id_generator):
     assert len(firehose.output) == 0
 
 
-def test_blacklisted_path_has_no_span(default_trace_id_generator):
+def test_blacklisted_path_has_no_span():
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.blacklisted_paths': [r'^/sample'],
     }
     app_main, transport, firehose = generate_app_main(settings, firehose=True)
@@ -150,13 +138,12 @@ def test_no_transport_handler_throws_error():
         WebTestApp(app_main).get('/sample', status=200)
 
 
-def test_binary_annotations(default_trace_id_generator):
+def test_binary_annotations():
     def set_extra_binary_annotations(dummy_request, response):
         return {'other': dummy_request.registry.settings['other_attr']}
 
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.set_extra_binary_annotations': set_extra_binary_annotations,
         'other_attr': '42',
     }
@@ -189,11 +176,8 @@ def test_binary_annotations(default_trace_id_generator):
     }
 
 
-def test_binary_annotations_404(default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+def test_binary_annotations_404():
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/abcd?test=1', status=404)
@@ -221,11 +205,8 @@ def test_binary_annotations_404(default_trace_id_generator):
     }
 
 
-def test_information_route(default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+def test_information_route():
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/information_route', status=199)
@@ -253,11 +234,8 @@ def test_information_route(default_trace_id_generator):
     }
 
 
-def test_redirect(default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+def test_redirect():
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/redirect', status=302)
@@ -285,11 +263,8 @@ def test_redirect(default_trace_id_generator):
     }
 
 
-def test_binary_annotations_500(default_trace_id_generator):
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+def test_binary_annotations_500():
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/server_error', status=500)
@@ -382,12 +357,11 @@ def test_host_and_port_in_span():
 
 
 def test_sample_server_span_with_firehose_tracing(
-        default_trace_id_generator, get_span):
-    settings = {
-        'zipkin.tracing_percent': 0,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-        'zipkin.firehose_handler': default_trace_id_generator,
-    }
+    get_span,
+    mock_generate_random_128bit_string,
+    mock_generate_random_64bit_string,
+):
+    settings = {'zipkin.tracing_percent': 0}
     app_main, normal_transport, firehose_transport = generate_app_main(
         settings,
         firehose=True,
@@ -395,11 +369,7 @@ def test_sample_server_span_with_firehose_tracing(
 
     old_time = time.time() * 1000000
 
-    with mock.patch(
-        'pyramid_zipkin.request_helper.generate_random_64bit_string'
-    ) as mock_generate_random_64bit_string:
-        mock_generate_random_64bit_string.return_value = '1'
-        WebTestApp(app_main).get('/sample', status=200)
+    WebTestApp(app_main).get('/sample', status=200)
 
     assert len(normal_transport.output) == 0
     assert len(firehose_transport.output) == 1
@@ -412,10 +382,9 @@ def test_sample_server_span_with_firehose_tracing(
     assert span == get_span
 
 
-def test_max_span_batch_size(default_trace_id_generator):
+def test_max_span_batch_size():
     settings = {
         'zipkin.tracing_percent': 0,
-        'zipkin.trace_id_generator': default_trace_id_generator,
         'zipkin.max_span_batch_size': 1,
     }
     app_main, normal_transport, firehose_transport = generate_app_main(
@@ -442,10 +411,9 @@ def test_max_span_batch_size(default_trace_id_generator):
     assert child_span['name'] == 'my_span'
 
 
-def test_use_pattern_as_span_name(default_trace_id_generator):
+def test_use_pattern_as_span_name():
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
         'other_attr': '42',
         'zipkin.use_pattern_as_span_name': True,
     }
@@ -462,10 +430,9 @@ def test_use_pattern_as_span_name(default_trace_id_generator):
     assert span['name'] == 'GET /pet/{petId}'
 
 
-def test_defaults_at_using_raw_url_path(default_trace_id_generator):
+def test_defaults_at_using_raw_url_path():
     settings = {
         'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
         'other_attr': '42',
     }
     app_main, transport, _ = generate_app_main(settings)
@@ -481,15 +448,9 @@ def test_defaults_at_using_raw_url_path(default_trace_id_generator):
     assert span['name'] == 'GET /pet/123'
 
 
-def test_sample_server_ipv6(
-    default_trace_id_generator,
-    get_span,
-):
+def test_sample_server_ipv6(get_span):
     # Assert that pyramid_zipkin and py_zipkin correctly handle ipv6 addresses.
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     # py_zipkin uses `socket.gethostbyname` to get the current host ip if it's not

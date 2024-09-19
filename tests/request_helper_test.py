@@ -102,22 +102,18 @@ def test_is_tracing_returns_what_tracing_percent_method_returns_for_rest(
     )
 
 
-def test_get_trace_id_returns_header_value_if_present(dummy_request):
+def test_get_trace_id_returns_header_value_if_present_64bit(dummy_request):
     dummy_request.headers = {'X-B3-TraceId': '48485a3953bb6124'}
-    dummy_request.registry.settings = {
-        'zipkin.trace_id_generator': lambda r: '17133d482ba4f605',
-    }
+    dummy_request.registry.settings = {}
     assert '48485a3953bb6124' == request_helper.get_trace_id(dummy_request)
 
 
-def test_get_trace_id_returns_header_value_if_present_128_bit(dummy_request):
+def test_get_trace_id_returns_header_value_if_present_128bit(dummy_request):
     # When someone passes a 128-bit trace id, it ends up as 32 hex characters.
-    # We choose the right-most 16 characters (corresponding to the lowest 64 bits)
     dummy_request.headers = {'X-B3-TraceId': '463ac35c9f6413ad48485a3953bb6124'}
-    dummy_request.registry.settings = {
-        'zipkin.trace_id_generator': lambda r: '17133d482ba4f605',
-    }
-    assert '48485a3953bb6124' == request_helper.get_trace_id(dummy_request)
+    dummy_request.registry.settings = {}
+    assert '463ac35c9f6413ad48485a3953bb6124' == \
+        request_helper.get_trace_id(dummy_request)
 
 
 def test_create_zipkin_attr_runs_custom_is_tracing_if_present(dummy_request):
@@ -129,27 +125,23 @@ def test_create_zipkin_attr_runs_custom_is_tracing_if_present(dummy_request):
     is_tracing.assert_called_once_with(dummy_request)
 
 
-def test_get_trace_id_runs_custom_trace_id_generator_if_present(dummy_request):
-    dummy_request.registry.settings = {
-        'zipkin.trace_id_generator': lambda r: '27133d482ba4f605',
-    }
-    assert '27133d482ba4f605' == request_helper.get_trace_id(dummy_request)
-
-
 @mock.patch(
-    'pyramid_zipkin.request_helper.generate_random_64bit_string',
+    'pyramid_zipkin.request_helper.generate_random_128bit_string',
     autospec=True
 )
-def test_get_trace_id_returns_some_random_id_by_default(compat, dummy_request):
-    compat.return_value = '37133d482ba4f605'
-    assert '37133d482ba4f605' == request_helper.get_trace_id(dummy_request)
+def test_get_trace_id_returns_some_random_id_by_default(
+    mock_gen_random, dummy_request
+):
+    mock_gen_random.return_value = '37133d482ba4f605890bccef7abce8f0'
+    assert '37133d482ba4f605890bccef7abce8f0' == \
+        request_helper.get_trace_id(dummy_request)
 
 
 @mock.patch('pyramid_zipkin.request_helper.is_tracing', autospec=True)
 def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(
-    mock, dummy_request
+    mock_is_tracing, dummy_request
 ):
-    mock.return_value = 'bla'
+    mock_is_tracing.return_value = 'bla'
     dummy_request.zipkin_trace_id = '12'
     dummy_request.headers = {
         'X-B3-TraceId': '12',
@@ -158,29 +150,13 @@ def test_create_sampled_zipkin_attr_creates_ZipkinAttr_object(
         'X-B3-Flags': '45',
     }
     zipkin_attr = request_helper.ZipkinAttrs(
-        trace_id='0000000000000012',
+        trace_id='12',
         span_id='23',
         parent_span_id='34',
         flags='45',
         is_sampled='bla'
     )
     assert zipkin_attr == request_helper.create_zipkin_attr(dummy_request)
-
-
-def test_get_trace_id_works_with_old_style_hex_string(dummy_request):
-    dummy_request.headers = {'X-B3-TraceId': '-0x3ab5151d76fb85e1'}
-    assert 'c54aeae289047a1f' == request_helper.get_trace_id(dummy_request)
-
-
-def test_convert_signed_hex():
-    assert (
-        request_helper._convert_signed_hex('0xd68adf75f4cfd13') ==
-        '0d68adf75f4cfd13'
-    )
-    assert (
-        request_helper._convert_signed_hex('-0x3ab5151d76fb85e1') ==
-        'c54aeae289047a1f'
-    )
 
 
 def test_update_annotations_from_request_environ():

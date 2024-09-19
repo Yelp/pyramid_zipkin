@@ -35,7 +35,7 @@ def dummy_response():
 
 @pytest.fixture
 def zipkin_attributes():
-    return {'trace_id': '17133d482ba4f605',
+    return {'trace_id': '17133d482ba4f6057289accf83b0adef',
             'span_id': '27133d482ba4f605',
             'parent_span_id': '37133d482ba4f605',
             'flags': '45',
