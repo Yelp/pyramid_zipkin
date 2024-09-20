@@ -157,6 +157,16 @@ def create_zipkin_attr(request: Request) -> ZipkinAttrs:
     )
 
 
+def safe_get_property(
+        obj: Request,
+        prop: str,
+        default: str) -> Optional[str]:
+    try:
+        return getattr(obj, prop)
+    except KeyError:
+        return default
+
+
 def get_binary_annotations(
     request: Request,
     response: Response,
@@ -169,14 +179,15 @@ def get_binary_annotations(
     """
 
     annotations = {
-        'http.request.method': request.method,
-        'network.protocol.version': request.http_version,
-        'url.path': request.path,
-        'server.address': request.server_name,
-        'server.port': str(request.server_port),
-        'url.scheme': request.scheme,
-        'http.uri': request.path,
-        'http.uri.qs': request.path_qs,
+        'http.request.method': safe_get_property(request, 'method', 'unknown'),
+        'network.protocol.version':
+            safe_get_property(request, 'http_version', 'unknown'),
+        'url.path': safe_get_property(request, 'path', 'unknown'),
+        'server.address': safe_get_property(request, 'server_name', 'unknown'),
+        'server.port': str(safe_get_property(request, 'server_port', 'unknown')),
+        'url.scheme': safe_get_property(request, 'scheme', 'unknown'),
+        'http.uri': safe_get_property(request, 'path', 'unknown'),
+        'http.uri.qs': safe_get_property(request, 'path_qs', 'unknown'),
         'otel.library.name': __name__.split('.')[0],
         'otel.library.version': __version__,
     }
