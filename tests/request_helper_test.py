@@ -1,5 +1,8 @@
 from unittest import mock
 
+from pyramid.registry import Registry
+from pyramid.request import Request
+
 from pyramid_zipkin import request_helper
 
 
@@ -181,3 +184,17 @@ def test_convert_signed_hex():
         request_helper._convert_signed_hex('-0x3ab5151d76fb85e1') ==
         'c54aeae289047a1f'
     )
+
+
+def test_request_has_no_server_protocol(get_request):
+    class TestRequest(Request):
+        http_version = property(fget=lambda a: {}["SERVER_PROTOCOL"])
+
+    testRequest = TestRequest.blank("GET /")
+    testRequest.registry = Registry()
+    testRequest.registry.settings = {}
+
+    try:
+        request_helper.get_binary_annotations(testRequest, None)
+    except KeyError:
+        assert False
