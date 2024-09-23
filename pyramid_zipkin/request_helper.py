@@ -167,31 +167,25 @@ def get_binary_annotations(
     :param response: the Pyramid response object
     :returns: binary annotation dict of {str: str}
     """
-
+    # use only @property of the request object
+    # https://sourcegraph.com/search?q=repo:%5Egithub%5C.com/Pylons/webob$@1.8.7++file:%5Esrc/webob/request%5C.py$+@property&patternType=keyword&sm=0
     annotations = {
-        'http.request.method': request.method,
-        'network.protocol.version': request.http_version,
-        'url.path': request.path,
-        'server.address': request.server_name,
-        'server.port': str(request.server_port),
-        'url.scheme': request.scheme,
         'http.uri': request.path,
         'http.uri.qs': request.path_qs,
         'otel.library.name': __name__.split('.')[0],
         'otel.library.version': __version__,
     }
 
-    if request.user_agent:
-        annotations['user_agent.original'] = request.user_agent
-
-    if request.query_string:
-        annotations["url.query"] = request.query_string
+    if request.client_addr:
+        annotations['client.address'] = request.client_addr
 
     if request.matched_route:
         annotations['http.route'] = request.matched_route.pattern
 
-    if request.client_addr:
-        annotations['client.address'] = request.client_addr
+    # update attributes from request.environ object
+    # https://sourcegraph.com/github.com/Pylons/webob@1.8.7/-/blob/docs/index.txt?L63-68
+    request_env = request.environ
+    _update_annotations_from_request_environ(request_env, annotations)
 
     if response:
         status_code = response.status_code
@@ -219,3 +213,41 @@ def get_binary_annotations(
             settings['zipkin.set_extra_binary_annotations'](request, response)
         )
     return annotations
+
+
+def _update_annotations_from_request_environ(
+        environ: Dict,
+        annotations: Dict[str, Optional[str]]
+) -> None:
+    method = environ.get('REQUEST_METHOD', '').strip()
+    if method:
+        annotations['http.request.method'] = method
+
+    flavor = environ.get('SERVER_PROTOCOL', '')
+    if flavor:
+        annotations['network.protocol.version'] = flavor
+
+    path = environ.get('PATH_INFO')
+    if path:
+        annotations['url.path'] = path
+
+    host_name = environ.get('SERVER_NAME')
+    host_port = environ.get('SERVER_PORT')
+
+    if host_name:
+        annotations['server.address'] = host_name
+
+    if host_port:
+        annotations['server.port'] = str(host_port)
+
+    url_scheme = environ.get('wsgi.url_scheme')
+    if url_scheme:
+        annotations['url.scheme'] = url_scheme
+
+    user_agent = environ.get('HTTP_USER_AGENT')
+    if user_agent:
+        annotations['user_agent.original'] = user_agent
+
+    query_string = environ.get('QUERY_STRING')
+    if query_string:
+        annotations['url.query'] = query_string
