@@ -1,3 +1,10 @@
+3.0.0 (2024-09-24)
+------------------
+- Generate 128-bit trace IDs by default. 64-bit trace IDs will be transparently
+  forwarded if received in the X-B3-TraceId header.
+- Remove support for '0x' and '-0x' prefixes in trace IDs
+- Remove the `zipkin.trace_id_generator` setting
+
 2.3.0 (2024-09-24)
 -------------------
 - Use environ dict object from request object to populate zipin span attributes
