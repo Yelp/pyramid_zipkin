@@ -181,3 +181,54 @@ def test_convert_signed_hex():
         request_helper._convert_signed_hex('-0x3ab5151d76fb85e1') ==
         'c54aeae289047a1f'
     )
+
+
+def test_update_annotations_from_request_environ():
+    annotation = {}
+    request_environ = {
+        'REQUEST_METHOD': 'GET',
+    }
+    request_helper._update_annotations_from_request_environ(
+        request_environ, annotation
+    )
+    assert annotation == {
+        'http.request.method': 'GET',
+    }
+    request_environ = {
+        'REQUEST_METHOD': 'POST',
+        'PATH_INFO': '/foo',
+        'QUERY_STRING': 'bar=baz',
+        'SERVER_PROTOCOL': 'HTTP/1.1',
+        'HTTP_USER_AGENT': 'test-agent',
+    }
+    annotation = {}
+    request_helper._update_annotations_from_request_environ(
+        request_environ, annotation
+    )
+    assert annotation == {
+        'http.request.method': 'POST',
+        'url.path': '/foo',
+        'network.protocol.version': 'HTTP/1.1',
+        'user_agent.original': 'test-agent',
+        'url.query': 'bar=baz',
+    }
+    request_environ = {}
+    annotation = {}
+    request_helper._update_annotations_from_request_environ(
+        request_environ, annotation
+    )
+    assert annotation == {}
+    request_environ = {
+        'SERVER_NAME': 'localhost',
+        'SERVER_PORT': '8080',
+        'wsgi.url_scheme': 'http',
+    }
+    annotation = {}
+    request_helper._update_annotations_from_request_environ(
+        request_environ, annotation
+    )
+    assert annotation == {
+        'server.address': 'localhost',
+        'server.port': '8080',
+        'url.scheme': 'http',
+    }
