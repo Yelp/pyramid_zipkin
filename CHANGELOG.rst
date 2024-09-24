@@ -1,3 +1,7 @@
+2.3.0 (2024-09-24)
+-------------------
+- Use environ dict object from request object to populate zipin span attributes
+
 2.2.1 (2024-07-04)
 -------------------
 - Requires Python >= 3.8
