@@ -6,13 +6,10 @@ from webtest import TestApp as WebTestApp
 from tests.acceptance.test_helper import generate_app_main
 
 
-def test_log_new_client_spans(default_trace_id_generator):
+def test_log_new_client_spans():
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/sample_v2_client', status=200)
@@ -36,44 +33,34 @@ def test_log_new_client_spans(default_trace_id_generator):
     ]
 
 
-@mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string')
 def test_headers_created_for_sampled_child_span(
-    mock_generate_string,
-    default_trace_id_generator
+    mock_generate_random_128bit_string,
+    mock_generate_random_64bit_string,
 ):
     # Simple smoke test for create_headers_for_new_span
-    mock_generate_string.return_value = '17133d482ba4f605'
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 100}
 
     _assert_headers_present(settings, is_sampled='1')
 
 
-@mock.patch('pyramid_zipkin.request_helper.generate_random_64bit_string')
 def test_headers_created_for_unsampled_child_span(
-    mock_generate_string,
-    default_trace_id_generator,
+    mock_generate_random_128bit_string,
+    mock_generate_random_64bit_string,
 ):
     # Headers are still created if the span is unsampled
-    mock_generate_string.return_value = '17133d482ba4f605'
-    settings = {
-        'zipkin.tracing_percent': 0,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 0}
     _assert_headers_present(settings, is_sampled='0')
 
 
 def _assert_headers_present(settings, is_sampled):
     # Helper method for smoke testing proper setting of headers.
-    # TraceId and ParentSpanId are set by default_trace_id_generator
-    # and mock_generate_string in upstream test methods.
+    # TraceId and ParentSpanId are set by 128bit and 64bit random string
+    # generators from py_zipkin. They are mocked in upstream test methods.
     expected = {
         'X-B3-Flags': '0',
         'X-B3-ParentSpanId': '17133d482ba4f605',
         'X-B3-Sampled': is_sampled,
-        'X-B3-TraceId': '17133d482ba4f605',
+        'X-B3-TraceId': '66ec982fcfba8bf3b32d71d76e4a16a3',
     }
 
     app_main, _, _ = generate_app_main(settings)
@@ -85,13 +72,10 @@ def _assert_headers_present(settings, is_sampled):
     assert expected == headers_json
 
 
-def test_span_context(default_trace_id_generator):
+def test_span_context():
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/span_context', status=200)
@@ -119,13 +103,10 @@ def test_span_context(default_trace_id_generator):
     assert grandchild_span['tags'] == {'grandchild': 'true'}
 
 
-def test_decorator(default_trace_id_generator):
+def test_decorator():
     # Tests that log lines with 'service_name' keys are logged as
     # new client spans.
-    settings = {
-        'zipkin.tracing_percent': 100,
-        'zipkin.trace_id_generator': default_trace_id_generator,
-    }
+    settings = {'zipkin.tracing_percent': 100}
     app_main, transport, _ = generate_app_main(settings)
 
     WebTestApp(app_main).get('/decorator_context', status=200)

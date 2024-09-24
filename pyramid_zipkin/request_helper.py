@@ -1,9 +1,9 @@
 import random
 import re
-import struct
 from typing import Dict
 from typing import Optional
 
+from py_zipkin.util import generate_random_128bit_string
 from py_zipkin.util import generate_random_64bit_string
 from py_zipkin.zipkin import ZipkinAttrs
 from pyramid.interfaces import IRoutesMapper
@@ -17,37 +17,13 @@ DEFAULT_REQUEST_TRACING_PERCENT = 0.5
 
 
 def get_trace_id(request: Request) -> str:
-    """Gets the trace id based on a request. If not present with the request,
-    create a custom (depending on config: `zipkin.trace_id_generator`) or a
-    completely random trace id.
+    """Gets the trace id based on a request. If not present with the request, a
+    completely random 128-bit trace id is generated.
 
     :param: current active pyramid request
-    :returns: a 64-bit hex string
+    :returns: the value of the 'X-B3-TraceId' header or a 128-bit hex string
     """
-    if 'X-B3-TraceId' in request.headers:
-        trace_id = _convert_signed_hex(request.headers['X-B3-TraceId'])
-        # Tolerates 128 bit X-B3-TraceId by reading the right-most 16 hex
-        # characters (as opposed to overflowing a U64 and starting a new trace).
-        trace_id = trace_id[-16:]
-    elif 'zipkin.trace_id_generator' in request.registry.settings:
-        trace_id = _convert_signed_hex(request.registry.settings[
-            'zipkin.trace_id_generator'](request))
-    else:
-        trace_id = generate_random_64bit_string()
-
-    return trace_id
-
-
-def _convert_signed_hex(s: str) -> str:
-    """Takes a signed hex string that begins with '0x' and converts it to
-    a 16-character string representing an unsigned hex value.
-    Examples:
-        '0xd68adf75f4cfd13' => 'd68adf75f4cfd13'
-        '-0x3ab5151d76fb85e1' => 'c54aeae289047a1f'
-    """
-    if s.startswith('0x') or s.startswith('-0x'):
-        s = '{:x}'.format(struct.unpack('Q', struct.pack('q', int(s, 16)))[0])
-    return s.zfill(16)
+    return request.headers.get('X-B3-TraceId', generate_random_128bit_string())
 
 
 def should_not_sample_path(request: Request) -> bool:

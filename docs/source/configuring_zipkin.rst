@@ -117,17 +117,6 @@ zipkin.tracing_percent
         'zipkin.tracing_percent': 1.0  # Increase tracing probability to 1%
 
 
-zipkin.trace_id_generator
-~~~~~~~~~~~~~~~~~~~~~~~~~
-    A method definition to generate a `trace_id` for the request. This is
-    useful if you, say, have a unique_request_id you'd like to preserve.
-    The trace_id must be a 64-bit hex string (e.g. '17133d482ba4f605').
-    By default, it creates a random trace id.
-
-    The method MUST take `request` as a parameter (so that you can make trace
-    id deterministic).
-
-
 zipkin.create_zipkin_attr
 ~~~~~~~~~~~~~~~~~~~~~~~~~
     A method that takes `request` and creates a ZipkinAttrs object. This
@@ -223,7 +212,6 @@ These settings can be added at Pyramid application setup like so:
             settings['zipkin.stream_name'] = 'zipkin_log'
             settings['zipkin.blacklisted_paths'] = [r'^/foo/?']
             settings['zipkin.blacklisted_routes'] = ['bar']
-            settings['zipkin.trace_id_generator'] = lambda req: '0x42'
             settings['zipkin.set_extra_binary_annotations'] = lambda req, resp: {'attr': str(req.attr)}
             # ...and so on with the other settings...
             config = Configurator(settings=settings)
