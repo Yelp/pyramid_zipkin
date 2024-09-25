@@ -1,3 +1,7 @@
+3.0.1 (2024-09-25)
+------------------
+- Bump from 3.0.0 to fix build
+
 3.0.0 (2024-09-24)
 ------------------
 - Generate 128-bit trace IDs by default. 64-bit trace IDs will be transparently
